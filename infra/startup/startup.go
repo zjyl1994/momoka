@@ -20,6 +20,16 @@ func Startup() (err error) {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Debugln("Momoka in DEBUG mode.")
 	}
+
+	vars.S3Config = vars.S3Conf{
+		Endpoint:  os.Getenv("MOMOKA_S3_ENDPOINT"),
+		Region:    os.Getenv("MOMOKA_S3_REGION"),
+		AccessID:  os.Getenv("MOMOKA_S3_ACCESS_ID"),
+		SecretKey: os.Getenv("MOMOKA_S3_SECRET_KEY"),
+		Bucket:    os.Getenv("MOMOKA_S3_BUCKET"),
+		Prefix:    utils.COALESCE(os.Getenv("MOMOKA_S3_PREFIX"), "momoka"),
+	}
+
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")
 	vars.DataPath = os.Getenv("MOMOKA_DATA_PATH")
 	err = os.MkdirAll(vars.DataPath, 0755)

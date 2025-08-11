@@ -7,4 +7,14 @@ var (
 	ListenAddr string
 	DataPath   string
 	Database   *gorm.DB
+	S3Config   S3Conf
 )
+
+type S3Conf struct {
+	Endpoint  string
+	Region    string
+	AccessID  string
+	SecretKey string
+	Bucket    string
+	Prefix    string
+}
