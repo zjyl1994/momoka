@@ -15,6 +15,11 @@ func COALESCE[T comparable](elem ...T) T {
 	}
 	return empty
 }
+
 func DataPath(paths ...string) string {
 	return filepath.Join(append([]string{vars.DataPath}, paths...)...)
+}
+
+func GetImageCachePath(imageHash, extName string) string {
+	return DataPath("cache", imageHash[0:2], imageHash[2:4], imageHash+extName)
 }

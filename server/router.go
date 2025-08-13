@@ -10,5 +10,7 @@ func Run(listenAddr string) error {
 		DisableStartupMessage: true,
 	})
 	logrus.Infof("Momoka running at %s", listenAddr)
+	app.Post("/upload", UploadImageHandler)
+	app.Get("/i/:filename", GetImageHandler)
 	return app.Listen(listenAddr)
 }
