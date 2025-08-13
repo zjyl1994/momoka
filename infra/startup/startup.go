@@ -7,6 +7,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	gorm_logrus "github.com/onrik/gorm-logrus"
 	"github.com/sirupsen/logrus"
+	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/server"
@@ -45,6 +46,11 @@ func Startup() (err error) {
 		return err
 	}
 	err = vars.Database.Exec("PRAGMA journal_mode=WAL;").Error
+	if err != nil {
+		return err
+	}
+
+	err = vars.Database.AutoMigrate(&common.Image{})
 	if err != nil {
 		return err
 	}
