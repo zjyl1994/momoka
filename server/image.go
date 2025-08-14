@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -28,12 +29,14 @@ func UploadImageHandler(c *fiber.Ctx) error {
 		ExtName:     extName,
 		ContentType: fileHeader.Header.Get("Content-Type"),
 		FileSize:    fileHeader.Size,
+		FileName:    filepath.Base(fileHeader.Filename),
+		UploadTime:  time.Now().Unix(),
 	}
 	imgID, err := service.ImageService.Add(imgObj)
 	if err != nil {
 		return err
 	}
-	logrus.Debugln("image id: ", imgID)
+	logrus.Debugf("image_id: %d\n", imgID)
 
 	cachePath := utils.GetImageCachePath(imageHash, extName)
 	err = os.MkdirAll(filepath.Dir(cachePath), 0755)

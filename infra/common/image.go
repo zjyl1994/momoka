@@ -6,4 +6,6 @@ type Image struct {
 	ExtName     string
 	ContentType string
 	FileSize    int64
+	FileName    string
+	UploadTime  int64
 }
