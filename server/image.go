@@ -47,6 +47,12 @@ func UploadImageHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	// 上传到S3
+	err = service.StorageService.Upload(cachePath, imageHash+extName)
+	if err != nil {
+		return err
+	}
+
 	outputUrl := c.BaseURL() + "/i/" + imageHash + extName
 	return c.SendString(outputUrl)
 }
@@ -59,7 +65,11 @@ func GetImageHandler(c *fiber.Ctx) error {
 
 	cachePath := utils.GetImageCachePath(imageHash, extName)
 	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
-		return fiber.ErrNotFound
+		// 从S3下载
+		err = service.StorageService.Download(imageHash+extName, cachePath)
+		if err != nil {
+			return err
+		}
 	}
 	return c.SendFile(cachePath)
 }

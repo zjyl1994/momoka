@@ -1,6 +1,7 @@
 package startup
 
 import (
+	"context"
 	"os"
 	"strconv"
 
@@ -29,6 +30,10 @@ func Startup() (err error) {
 		SecretKey: os.Getenv("MOMOKA_S3_SECRET_KEY"),
 		Bucket:    os.Getenv("MOMOKA_S3_BUCKET"),
 		Prefix:    utils.COALESCE(os.Getenv("MOMOKA_S3_PREFIX"), "momoka"),
+	}
+	vars.S3Client, err = utils.InitS3Client(context.Background(), vars.S3Config)
+	if err != nil {
+		return err
 	}
 
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")

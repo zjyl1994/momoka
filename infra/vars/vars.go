@@ -1,6 +1,9 @@
 package vars
 
-import "gorm.io/gorm"
+import (
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"gorm.io/gorm"
+)
 
 var (
 	DebugMode  bool
@@ -8,6 +11,7 @@ var (
 	DataPath   string
 	Database   *gorm.DB
 	S3Config   S3Conf
+	S3Client   *s3.Client
 )
 
 type S3Conf struct {
