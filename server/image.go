@@ -13,6 +13,8 @@ import (
 	"github.com/zjyl1994/momoka/service"
 )
 
+var getImageSf utils.SingleFlight[string]
+
 func UploadImageHandler(c *fiber.Ctx) error {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
@@ -60,16 +62,36 @@ func UploadImageHandler(c *fiber.Ctx) error {
 func GetImageHandler(c *fiber.Ctx) error {
 	fileName := c.Params("filename")
 
-	extName := filepath.Ext(fileName)
-	imageHash := strings.TrimSuffix(filepath.Base(fileName), extName)
-
-	cachePath := utils.GetImageCachePath(imageHash, extName)
-	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
-		// 从S3下载
-		err = service.StorageService.Download(imageHash+extName, cachePath)
+	localPath, err := getImageSf.Do(fileName, func() (string, error) {
+		extName := filepath.Ext(fileName)
+		imageHash := strings.TrimSuffix(filepath.Base(fileName), extName)
+		// 检查库里有没有，防止穿透到S3上产生404请求费用
+		exists, err := service.ImageService.ImageHashExists(imageHash)
 		if err != nil {
-			return err
+			return "", err
 		}
+		if !exists {
+			return "", nil
+		}
+
+		// 加载图片实际路径
+		cachePath := utils.GetImageCachePath(imageHash, extName)
+		if _, err := os.Stat(cachePath); os.IsNotExist(err) {
+			// 从S3下载
+			err = service.StorageService.Download(imageHash+extName, cachePath)
+			if err != nil {
+				return "", err
+			}
+		}
+		return cachePath, nil
+	})
+
+	if err != nil {
+		return err
 	}
-	return c.SendFile(cachePath)
+	if len(localPath) == 0 {
+		return fiber.ErrNotFound
+	} else {
+		return c.SendFile(localPath)
+	}
 }

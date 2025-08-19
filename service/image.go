@@ -1,8 +1,11 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -17,14 +20,32 @@ func (imageService) Add(img *common.Image) (int64, error) {
 	return img.ID, err
 }
 
-func (imageService) GetByHash(hash string) (*common.Image, error) {
-	var img common.Image
-	err := vars.Database.Where("hash = ?", hash).First(&img).Error
-	return &img, err
+func (imageService) ImageHashExists(hash string) (bool, error) {
+	var count int64
+	err := vars.Database.Model(&common.Image{}).Where("hash = ?", hash).Count(&count).Error
+	return count > 0, err
 }
 
 func (imageService) GetByID(id int64) (*common.Image, error) {
 	var img common.Image
 	err := vars.Database.Where("id = ?", id).First(&img).Error
-	return &img, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &img, nil
+}
+
+func (imageService) GetByHash(hash string) (*common.Image, error) {
+	var img common.Image
+	err := vars.Database.Where("hash = ?", hash).First(&img).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &img, nil
 }
