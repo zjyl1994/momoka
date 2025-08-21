@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
+	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/service"
 )
 
@@ -55,7 +56,12 @@ func UploadImageHandler(c *fiber.Ctx) error {
 		return err
 	}
 
-	outputUrl := c.BaseURL() + "/i/" + imageHash + extName
+	imageHashId, err := vars.HashID.EncodeInt64([]int64{imgID})
+	if err != nil {
+		return err
+	}
+
+	outputUrl := c.BaseURL() + "/i/" + imageHashId + extName
 	return c.SendString(outputUrl)
 }
 
@@ -64,21 +70,26 @@ func GetImageHandler(c *fiber.Ctx) error {
 
 	localPath, err := getImageSf.Do(fileName, func() (string, error) {
 		extName := filepath.Ext(fileName)
-		imageHash := strings.TrimSuffix(filepath.Base(fileName), extName)
-		// 检查库里有没有，防止穿透到S3上产生404请求费用
-		exists, err := service.ImageService.ImageHashExists(imageHash)
+		imageHashId := strings.TrimSuffix(filepath.Base(fileName), extName)
+		imageId, err := vars.HashID.DecodeInt64WithError(imageHashId)
 		if err != nil {
 			return "", err
 		}
-		if !exists {
+
+		// 检查库里有没有，防止穿透到S3上产生404请求费用
+		imgObj, err := service.ImageService.GetByID(imageId[0])
+		if err != nil {
+			return "", err
+		}
+		if imgObj == nil {
 			return "", nil
 		}
 
 		// 加载图片实际路径
-		cachePath := utils.GetImageCachePath(imageHash, extName)
+		cachePath := utils.GetImageCachePath(imgObj.Hash, extName)
 		if _, err := os.Stat(cachePath); os.IsNotExist(err) {
 			// 从S3下载
-			err = service.StorageService.Download(imageHash+extName, cachePath)
+			err = service.StorageService.Download(imgObj.Hash+extName, cachePath)
 			if err != nil {
 				return "", err
 			}

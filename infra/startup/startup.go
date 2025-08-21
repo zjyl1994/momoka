@@ -8,6 +8,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	gorm_logrus "github.com/onrik/gorm-logrus"
 	"github.com/sirupsen/logrus"
+	"github.com/speps/go-hashids"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
@@ -37,6 +38,16 @@ func Startup() (err error) {
 	}
 
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")
+	vars.Secret = utils.COALESCE(os.Getenv("MOMOKA_SECRET"), "momoka")
+
+	hd := hashids.NewData()
+	hd.Salt = vars.Secret
+	hd.MinLength = 6
+	vars.HashID, err = hashids.NewWithData(hd)
+	if err != nil {
+		return err
+	}
+
 	vars.DataPath = os.Getenv("MOMOKA_DATA_PATH")
 	err = os.MkdirAll(vars.DataPath, 0755)
 	if err != nil {
