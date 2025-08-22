@@ -104,16 +104,16 @@ func GetImageHandler(c *fiber.Ctx) error {
 	if len(localPath) == 0 {
 		return fiber.ErrNotFound
 	}
-	// 检查客户是否支持webp
-	if c.Accepts("image/webp") == "image/webp" {
+	// 检查是否支持webp
+	if vars.CwebpBin != "" && c.Accepts("image/webp") == "image/webp" {
 		webpPath := strings.TrimSuffix(localPath, filepath.Ext(localPath)) + ".webp"
 		if !utils.FileExists(webpPath) { // 本地缓存中没有，尝试生成
 			if _, err = webpSf.Do(localPath, func() (string, error) {
 				startTime := time.Now()
 				// 转换为webp
-				err := utils.ConvWebp(localPath, webpPath)
+				e := utils.ConvWebp(localPath, webpPath)
 				logrus.Debugln("conv webp cost:", time.Since(startTime))
-				return webpPath, err
+				return webpPath, e
 			}); err == nil {
 				localPath = webpPath
 			}

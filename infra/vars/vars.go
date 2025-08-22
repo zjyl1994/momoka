@@ -15,6 +15,7 @@ var (
 	S3Config   S3Conf
 	S3Client   *s3.Client
 	HashID     *hashids.HashID
+	CwebpBin   string
 )
 
 type S3Conf struct {

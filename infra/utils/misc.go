@@ -90,12 +90,13 @@ func ConvWebp(inputFile, outFile string) error {
 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".tiff" && ext != ".tif" {
 		return nil // 不支持的格式无需转换
 	}
-	exePath, err := exec.LookPath("cwebp")
-	if err != nil {
-		return err
+
+	if vars.CwebpBin == "" {
+		return fmt.Errorf("cwebp not found")
 	}
+
 	// 调用cwebp命令进行转换
-	cmd := exec.Command(exePath, inputFile, "-o", outFile, "-quiet")
+	cmd := exec.Command(vars.CwebpBin, inputFile, "-o", outFile, "-quiet")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("cwebp failed: %v, output: %s", err, string(output))

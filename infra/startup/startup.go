@@ -3,6 +3,7 @@ package startup
 import (
 	"context"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -23,6 +24,10 @@ func Startup() (err error) {
 	if vars.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Debugln("Momoka in DEBUG mode.")
+	}
+
+	if val, e := exec.LookPath("cwebp"); e == nil {
+		vars.CwebpBin = val
 	}
 
 	vars.S3Config = vars.S3Conf{
