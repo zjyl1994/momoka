@@ -27,21 +27,7 @@ func UploadImageHandler(c *fiber.Ctx) error {
 		return err
 	}
 	extName := filepath.Ext(fileHeader.Filename)
-
-	imgObj := &common.Image{
-		Hash:        imageHash,
-		ExtName:     extName,
-		ContentType: fileHeader.Header.Get("Content-Type"),
-		FileSize:    fileHeader.Size,
-		FileName:    filepath.Base(fileHeader.Filename),
-		UploadTime:  time.Now().Unix(),
-	}
-	imgID, err := service.ImageService.Add(imgObj)
-	if err != nil {
-		return err
-	}
-	logrus.Debugf("image_id: %d\n", imgID)
-
+	// 写磁盘缓存
 	cachePath := utils.GetImageCachePath(imageHash, extName)
 	err = os.MkdirAll(filepath.Dir(cachePath), 0755)
 	if err != nil {
@@ -56,7 +42,21 @@ func UploadImageHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-
+	// 写入DB
+	imgObj := &common.Image{
+		Hash:        imageHash,
+		ExtName:     extName,
+		ContentType: fileHeader.Header.Get("Content-Type"),
+		FileSize:    fileHeader.Size,
+		FileName:    filepath.Base(fileHeader.Filename),
+		UploadTime:  time.Now().Unix(),
+	}
+	imgID, err := service.ImageService.Add(imgObj)
+	if err != nil {
+		return err
+	}
+	logrus.Debugf("image_id: %d\n", imgID)
+	// 生成链接
 	imageHashId, err := vars.HashID.EncodeInt64([]int64{imgID})
 	if err != nil {
 		return err
