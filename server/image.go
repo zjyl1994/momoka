@@ -107,7 +107,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 	// 检查客户是否支持webp
 	if c.Accepts("image/webp") == "image/webp" {
 		webpPath := strings.TrimSuffix(localPath, filepath.Ext(localPath)) + ".webp"
-		if !utils.FileExists(webpPath) {
+		if !utils.FileExists(webpPath) { // 本地缓存中没有，尝试生成
 			if _, err = webpSf.Do(localPath, func() (string, error) {
 				startTime := time.Now()
 				// 转换为webp
@@ -117,7 +117,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 			}); err == nil {
 				localPath = webpPath
 			}
-		} else {
+		} else { // 提供已有的webp
 			localPath = webpPath
 		}
 	}

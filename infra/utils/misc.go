@@ -2,15 +2,15 @@ package utils
 
 import (
 	"context"
-	"image"
+	"fmt"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
-	"github.com/HugoSmits86/nativewebp"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -87,32 +87,18 @@ func TouchFile(filepath string) error {
 // ConvWebp 将图片转换为WebP格式
 func ConvWebp(inputFile, outFile string) error {
 	ext := filepath.Ext(inputFile)
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" {
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".tiff" && ext != ".tif" {
 		return nil // 不支持的格式无需转换
 	}
-
-	// 读取原始图片文件
-	img, err := os.Open(inputFile)
+	exePath, err := exec.LookPath("cwebp")
 	if err != nil {
 		return err
 	}
-	defer img.Close()
-
-	srcImage, _, err := image.Decode(img)
+	// 调用cwebp命令进行转换
+	cmd := exec.Command(exePath, inputFile, "-o", outFile, "-quiet")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return err
-	}
-
-	// 生成WebP文件
-	file, err := os.Create(outFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	err = nativewebp.Encode(file, srcImage, nil)
-	if err != nil {
-		return err
+		return fmt.Errorf("cwebp failed: %v, output: %s", err, string(output))
 	}
 	return nil
 }
