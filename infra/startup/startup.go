@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	gorm_logrus "github.com/onrik/gorm-logrus"
@@ -70,6 +71,17 @@ func Startup() (err error) {
 	if err != nil {
 		return err
 	}
+
+	// 后台线程自动清理本地缓存，保留7天内的最近300个文件
+	go utils.RunTickerTask(context.Background(), time.Hour, true, func(context.Context) {
+		logrus.Infoln("Auto cache cleanup start...")
+		cleanCount, err := utils.CleanCacheByModTime(utils.DataPath("cache"), 7, 300)
+		if err != nil {
+			logrus.Errorf("Auto cache cleanup failed: %v", err)
+		} else {
+			logrus.Infof("Auto cleanup %d cache file(s)", cleanCount)
+		}
+	})
 
 	return server.Run(vars.ListenAddr)
 }

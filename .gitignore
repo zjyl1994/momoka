@@ -33,3 +33,4 @@ go.work.sum
 
 data/
 momoka
+__debug_bin*

@@ -111,3 +111,22 @@ func FileExists(filename string) bool {
 	}
 	return !info.IsDir()
 }
+
+// RunTickerTask 运行定时任务
+func RunTickerTask(ctx context.Context, interval time.Duration, firstNow bool, task func(context.Context)) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	if firstNow {
+		task(ctx)
+	}
+
+	for {
+		select {
+		case <-ticker.C:
+			task(ctx)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
