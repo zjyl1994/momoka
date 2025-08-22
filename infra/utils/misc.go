@@ -2,8 +2,15 @@ package utils
 
 import (
 	"context"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/HugoSmits86/nativewebp"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -70,4 +77,51 @@ func InitS3Client(ctx context.Context, conf vars.S3Conf) (*s3.Client, error) {
 	s3Client := s3.NewFromConfig(cfg, s3Opts...)
 
 	return s3Client, nil
+}
+
+func TouchFile(filepath string) error {
+	now := time.Now()
+	return os.Chtimes(filepath, now, now)
+}
+
+// ConvWebp 将图片转换为WebP格式
+func ConvWebp(inputFile, outFile string) error {
+	ext := filepath.Ext(inputFile)
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" {
+		return nil // 不支持的格式无需转换
+	}
+
+	// 读取原始图片文件
+	img, err := os.Open(inputFile)
+	if err != nil {
+		return err
+	}
+	defer img.Close()
+
+	srcImage, _, err := image.Decode(img)
+	if err != nil {
+		return err
+	}
+
+	// 生成WebP文件
+	file, err := os.Create(outFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	err = nativewebp.Encode(file, srcImage, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// FileExists 检查文件是否存在
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }

@@ -15,6 +15,7 @@ import (
 )
 
 var getImageSf utils.SingleFlight[string]
+var webpSf utils.SingleFlight[string]
 
 func UploadImageHandler(c *fiber.Ctx) error {
 	fileHeader, err := c.FormFile("file")
@@ -87,7 +88,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 
 		// 加载图片实际路径
 		cachePath := utils.GetImageCachePath(imgObj.Hash, extName)
-		if _, err := os.Stat(cachePath); os.IsNotExist(err) {
+		if !utils.FileExists(cachePath) {
 			// 从S3下载
 			err = service.StorageService.Download(imgObj.Hash+extName, cachePath)
 			if err != nil {
@@ -102,7 +103,29 @@ func GetImageHandler(c *fiber.Ctx) error {
 	}
 	if len(localPath) == 0 {
 		return fiber.ErrNotFound
-	} else {
-		return c.SendFile(localPath)
 	}
+	// 检查客户是否支持webp
+	if c.Accepts("image/webp") == "image/webp" {
+		webpPath := strings.TrimSuffix(localPath, filepath.Ext(localPath)) + ".webp"
+		if !utils.FileExists(webpPath) {
+			if _, err = webpSf.Do(localPath, func() (string, error) {
+				startTime := time.Now()
+				// 转换为webp
+				err := utils.ConvWebp(localPath, webpPath)
+				logrus.Debugln("conv webp cost:", time.Since(startTime))
+				return webpPath, err
+			}); err == nil {
+				localPath = webpPath
+			}
+		} else {
+			localPath = webpPath
+		}
+	}
+	// 刷新文件时间,方便后续清理使用
+	err = utils.TouchFile(localPath)
+	if err != nil {
+		return err
+	}
+	return c.SendFile(localPath)
+
 }

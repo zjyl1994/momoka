@@ -15,6 +15,7 @@ type imageService struct{}
 
 func (imageService) Add(img *common.Image) (int64, error) {
 	err := vars.Database.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "hash"}},
 		UpdateAll: true,
 	}).Create(img).Error
 	return img.ID, err
