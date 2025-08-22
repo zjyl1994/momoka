@@ -1,8 +1,10 @@
 package server
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +24,22 @@ func UploadImageHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	var folderID int64
+	folderID, err = parseFolderID(c.FormValue("folder_id"))
+	if err != nil {
+		logrus.Errorln("parse folder id failed: ", err)
+	}
+	if folderID != 0 {
+		folder, err := service.ImageFolderService.Get(folderID)
+		if err != nil {
+			return err
+		}
+		if folder == nil {
+			return errors.New("folder not found")
+		}
+	}
+
 	imageHash, err := utils.MultipartFileHeaderHash(fileHeader)
 	if err != nil {
 		return err
@@ -43,13 +61,16 @@ func UploadImageHandler(c *fiber.Ctx) error {
 		return err
 	}
 	// 写入DB
+	now := time.Now().Unix()
 	imgObj := &common.Image{
 		Hash:        imageHash,
 		ExtName:     extName,
 		ContentType: fileHeader.Header.Get("Content-Type"),
 		FileSize:    fileHeader.Size,
 		FileName:    filepath.Base(fileHeader.Filename),
-		UploadTime:  time.Now().Unix(),
+		CreateTime:  now,
+		UpdateTime:  now,
+		FolderID:    folderID,
 	}
 	imgID, err := service.ImageService.Add(imgObj)
 	if err != nil {
@@ -57,7 +78,7 @@ func UploadImageHandler(c *fiber.Ctx) error {
 	}
 	logrus.Debugf("image_id: %d\n", imgID)
 	// 生成链接
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{imgID})
+	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.HID_TYPE_IMAGE, imgID})
 	if err != nil {
 		return err
 	}
@@ -72,13 +93,17 @@ func GetImageHandler(c *fiber.Ctx) error {
 	localPath, err := getImageSf.Do(fileName, func() (string, error) {
 		extName := filepath.Ext(fileName)
 		imageHashId := strings.TrimSuffix(filepath.Base(fileName), extName)
+
 		imageId, err := vars.HashID.DecodeInt64WithError(imageHashId)
 		if err != nil {
 			return "", err
 		}
+		if len(imageId) != 2 || imageId[0] != common.HID_TYPE_IMAGE {
+			return "", errors.New("invalid image id")
+		}
 
 		// 检查库里有没有，防止穿透到S3上产生404请求费用
-		imgObj, err := service.ImageService.GetByID(imageId[0])
+		imgObj, err := service.ImageService.GetByID(imageId[1])
 		if err != nil {
 			return "", err
 		}
@@ -128,4 +153,21 @@ func GetImageHandler(c *fiber.Ctx) error {
 	}
 	return c.SendFile(localPath)
 
+}
+
+func parseFolderID(val string) (int64, error) {
+	if len(val) == 0 {
+		return 0, nil
+	}
+	if val, err := strconv.ParseInt(val, 10, 64); err == nil {
+		return val, nil
+	}
+	folderId, err := vars.HashID.DecodeInt64WithError(val)
+	if err != nil {
+		return 0, err
+	}
+	if len(folderId) != 2 || folderId[0] != common.HID_TYPE_FOLDER {
+		return 0, errors.New("invalid folder id")
+	}
+	return folderId[1], nil
 }

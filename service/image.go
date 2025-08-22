@@ -2,8 +2,10 @@ package service
 
 import (
 	"errors"
+	"os"
 
 	"github.com/zjyl1994/momoka/infra/common"
+	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -49,4 +51,56 @@ func (imageService) GetByHash(hash string) (*common.Image, error) {
 		return nil, err
 	}
 	return &img, nil
+}
+
+func (imageService) DeleteByID(id int64) error {
+	img, err := ImageService.GetByID(id)
+	if err != nil {
+		return err
+	}
+	if img == nil {
+		return errors.New("image not found")
+	}
+	return ImageService.Delete(img)
+}
+
+func (imageService) Delete(img *common.Image) (err error) {
+	// 删除S3对象
+	err = StorageService.Delete(img.Hash + img.ExtName)
+	if err != nil {
+		return err
+	}
+	// 删除本地对象
+	err = os.Remove(utils.GetImageCachePath(img.Hash, img.ExtName))
+	if err != nil {
+		return err
+	}
+	// 删除数据库记录
+	err = vars.Database.Delete(&common.Image{}, img.ID).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (imageService) Move(id int64, folderID int64) error {
+	result := vars.Database.Model(&common.Image{}).Where("id = ?", id).Update("folder_id", folderID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("image not found")
+	}
+	return nil
+}
+
+func (imageService) Rename(id int64, name string) error {
+	result := vars.Database.Model(&common.Image{}).Where("id = ?", id).Update("file_name", name)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("image not found")
+	}
+	return nil
 }

@@ -69,3 +69,17 @@ func (storageService) Download(remotePath, diskPath string) error {
 	_, err = io.Copy(file, resp.Body)
 	return err
 }
+
+func (storageService) Delete(remotePath string) error {
+	// 构建完整的远程路径
+	fullRemotePath := filepath.Join(vars.S3Config.Prefix, remotePath)
+	// 删除S3对象
+	_, err := vars.S3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+		Bucket: aws.String(vars.S3Config.Bucket),
+		Key:    aws.String(fullRemotePath),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}

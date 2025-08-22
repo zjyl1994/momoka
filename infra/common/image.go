@@ -7,5 +7,7 @@ type Image struct {
 	ContentType string
 	FileSize    int64
 	FileName    string
-	UploadTime  int64
+	FolderID    int64 `gorm:"default:0"`
+	CreateTime  int64 `gorm:"autoCreateTime"`
+	UpdateTime  int64 `gorm:"autoUpdateTime"`
 }
