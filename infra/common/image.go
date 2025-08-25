@@ -7,7 +7,13 @@ type Image struct {
 	ContentType string
 	FileSize    int64
 	FileName    string
-	FolderID    int64 `gorm:"default:0"`
-	CreateTime  int64 `gorm:"autoCreateTime"`
-	UpdateTime  int64 `gorm:"autoUpdateTime"`
+	FolderID    int64  `gorm:"default:0"`
+	CreateTime  int64  `gorm:"autoCreateTime"`
+	UpdateTime  int64  `gorm:"autoUpdateTime"`
+	URL         string `gorm:"-:all"`
+}
+
+type ImageReq struct {
+	FileName *string
+	FolderID *int64
 }

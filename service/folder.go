@@ -96,3 +96,14 @@ func (s *imageFolderService) DeleteRecursively(id int64) error {
 	}
 	return vars.Database.Delete(&common.ImageFolder{}, id).Error
 }
+
+func (s *imageFolderService) SetPublic(id int64, public bool) error {
+	result := vars.Database.Model(&common.ImageFolder{}).Where("id = ?", id).Update("public", public)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("folder not found")
+	}
+	return nil
+}

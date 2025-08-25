@@ -2,9 +2,7 @@ package server
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,74 +16,6 @@ import (
 
 var getImageSf utils.SingleFlight[string]
 var webpSf utils.SingleFlight[string]
-
-func UploadImageHandler(c *fiber.Ctx) error {
-	fileHeader, err := c.FormFile("file")
-	if err != nil {
-		return err
-	}
-
-	var folderID int64
-	folderID, err = parseFolderID(c.FormValue("folder_id"))
-	if err != nil {
-		logrus.Errorln("parse folder id failed: ", err)
-	}
-	if folderID != 0 {
-		folder, e := service.ImageFolderService.Get(folderID)
-		if e != nil {
-			return e
-		}
-		if folder == nil {
-			return errors.New("folder not found")
-		}
-	}
-
-	imageHash, err := utils.MultipartFileHeaderHash(fileHeader)
-	if err != nil {
-		return err
-	}
-	extName := filepath.Ext(fileHeader.Filename)
-	// 写磁盘缓存
-	cachePath := utils.GetImageCachePath(imageHash, extName)
-	err = os.MkdirAll(filepath.Dir(cachePath), 0755)
-	if err != nil {
-		return err
-	}
-	err = c.SaveFile(fileHeader, cachePath)
-	if err != nil {
-		return err
-	}
-	// 上传到S3
-	err = service.StorageService.Upload(cachePath, imageHash+extName)
-	if err != nil {
-		return err
-	}
-	// 写入DB
-	now := time.Now().Unix()
-	imgObj := &common.Image{
-		Hash:        imageHash,
-		ExtName:     extName,
-		ContentType: fileHeader.Header.Get("Content-Type"),
-		FileSize:    fileHeader.Size,
-		FileName:    filepath.Base(fileHeader.Filename),
-		CreateTime:  now,
-		UpdateTime:  now,
-		FolderID:    folderID,
-	}
-	imgID, err := service.ImageService.Add(imgObj)
-	if err != nil {
-		return err
-	}
-	logrus.Debugf("image_id: %d\n", imgID)
-	// 生成链接
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.HID_TYPE_IMAGE, imgID})
-	if err != nil {
-		return err
-	}
-
-	outputUrl := c.BaseURL() + "/i/" + imageHashId + extName
-	return c.SendString(outputUrl)
-}
 
 func GetImageHandler(c *fiber.Ctx) error {
 	fileName := c.Params("filename")
@@ -153,21 +83,4 @@ func GetImageHandler(c *fiber.Ctx) error {
 	}
 	return c.SendFile(localPath)
 
-}
-
-func parseFolderID(val string) (int64, error) {
-	if len(val) == 0 {
-		return 0, nil
-	}
-	if val, err := strconv.ParseInt(val, 10, 64); err == nil {
-		return val, nil
-	}
-	folderId, err := vars.HashID.DecodeInt64WithError(val)
-	if err != nil {
-		return 0, err
-	}
-	if len(folderId) != 2 || folderId[0] != common.HID_TYPE_FOLDER {
-		return 0, errors.New("invalid folder id")
-	}
-	return folderId[1], nil
 }
