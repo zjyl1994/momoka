@@ -31,9 +31,9 @@ func UploadImageHandler(c *fiber.Ctx) error {
 		logrus.Errorln("parse folder id failed: ", err)
 	}
 	if folderID != 0 {
-		folder, err := service.ImageFolderService.Get(folderID)
-		if err != nil {
-			return err
+		folder, e := service.ImageFolderService.Get(folderID)
+		if e != nil {
+			return e
 		}
 		if folder == nil {
 			return errors.New("folder not found")

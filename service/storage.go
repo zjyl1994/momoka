@@ -16,7 +16,7 @@ var StorageService = &storageService{}
 type storageService struct{}
 
 // Upload 上传文件到S3
-func (storageService) Upload(diskPath, remotePath string) error {
+func (s *storageService) Upload(diskPath, remotePath string) error {
 	// 打开本地文件
 	file, err := os.Open(diskPath)
 	if err != nil {
@@ -38,7 +38,7 @@ func (storageService) Upload(diskPath, remotePath string) error {
 }
 
 // Download 从S3下载文件
-func (storageService) Download(remotePath, diskPath string) error {
+func (s *storageService) Download(remotePath, diskPath string) error {
 	// 构建完整的远程路径
 	fullRemotePath := filepath.Join(vars.S3Config.Prefix, remotePath)
 
@@ -54,8 +54,8 @@ func (storageService) Download(remotePath, diskPath string) error {
 
 	// 确保目标目录存在
 	dir := filepath.Dir(diskPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
+	if e := os.MkdirAll(dir, 0755); e != nil {
+		return e
 	}
 
 	// 创建本地文件
@@ -70,7 +70,7 @@ func (storageService) Download(remotePath, diskPath string) error {
 	return err
 }
 
-func (storageService) Delete(remotePath string) error {
+func (s *storageService) Delete(remotePath string) error {
 	// 构建完整的远程路径
 	fullRemotePath := filepath.Join(vars.S3Config.Prefix, remotePath)
 	// 删除S3对象

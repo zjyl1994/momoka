@@ -15,7 +15,7 @@ var ImageService = &imageService{}
 
 type imageService struct{}
 
-func (imageService) Add(img *common.Image) (int64, error) {
+func (s *imageService) Add(img *common.Image) (int64, error) {
 	err := vars.Database.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "hash"}},
 		UpdateAll: true,
@@ -23,13 +23,13 @@ func (imageService) Add(img *common.Image) (int64, error) {
 	return img.ID, err
 }
 
-func (imageService) ImageHashExists(hash string) (bool, error) {
+func (s *imageService) ImageHashExists(hash string) (bool, error) {
 	var count int64
 	err := vars.Database.Model(&common.Image{}).Where("hash = ?", hash).Count(&count).Error
 	return count > 0, err
 }
 
-func (imageService) GetByID(id int64) (*common.Image, error) {
+func (s *imageService) GetByID(id int64) (*common.Image, error) {
 	var img common.Image
 	err := vars.Database.Where("id = ?", id).First(&img).Error
 	if err != nil {
@@ -41,7 +41,7 @@ func (imageService) GetByID(id int64) (*common.Image, error) {
 	return &img, nil
 }
 
-func (imageService) GetByHash(hash string) (*common.Image, error) {
+func (s *imageService) GetByHash(hash string) (*common.Image, error) {
 	var img common.Image
 	err := vars.Database.Where("hash = ?", hash).First(&img).Error
 	if err != nil {
@@ -53,7 +53,7 @@ func (imageService) GetByHash(hash string) (*common.Image, error) {
 	return &img, nil
 }
 
-func (imageService) DeleteByID(id int64) error {
+func (s *imageService) DeleteByID(id int64) error {
 	img, err := ImageService.GetByID(id)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (imageService) DeleteByID(id int64) error {
 	return ImageService.Delete(img)
 }
 
-func (imageService) Delete(img *common.Image) (err error) {
+func (s *imageService) Delete(img *common.Image) (err error) {
 	// 删除S3对象
 	err = StorageService.Delete(img.Hash + img.ExtName)
 	if err != nil {
@@ -83,7 +83,7 @@ func (imageService) Delete(img *common.Image) (err error) {
 	return nil
 }
 
-func (imageService) Move(id int64, folderID int64) error {
+func (s *imageService) Move(id int64, folderID int64) error {
 	result := vars.Database.Model(&common.Image{}).Where("id = ?", id).Update("folder_id", folderID)
 	if result.Error != nil {
 		return result.Error
@@ -94,7 +94,7 @@ func (imageService) Move(id int64, folderID int64) error {
 	return nil
 }
 
-func (imageService) Rename(id int64, name string) error {
+func (s *imageService) Rename(id int64, name string) error {
 	result := vars.Database.Model(&common.Image{}).Where("id = ?", id).Update("file_name", name)
 	if result.Error != nil {
 		return result.Error
