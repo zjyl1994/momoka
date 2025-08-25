@@ -46,6 +46,15 @@ func Startup() (err error) {
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")
 	vars.Secret = utils.COALESCE(os.Getenv("MOMOKA_SECRET"), "momoka")
 
+	vars.AutoCleanDays, err = strconv.Atoi(utils.COALESCE(os.Getenv("MOMOKA_AUTO_CLEAN_DAYS"), "7"))
+	if err != nil {
+		return err
+	}
+	vars.AutoCleanItems, err = strconv.Atoi(utils.COALESCE(os.Getenv("MOMOKA_AUTO_CLEAN_ITEMS"), "300"))
+	if err != nil {
+		return err
+	}
+
 	hd := hashids.NewData()
 	hd.Salt = vars.Secret
 	hd.MinLength = 6
@@ -77,16 +86,18 @@ func Startup() (err error) {
 		return err
 	}
 
-	// 后台线程自动清理本地缓存，保留7天内的最近300个文件
-	go utils.RunTickerTask(context.Background(), time.Hour, true, func(context.Context) {
-		logrus.Infoln("Auto cache cleanup start...")
-		cleanCount, err := utils.CleanCacheByModTime(utils.DataPath("cache"), 7, 300)
-		if err != nil {
-			logrus.Errorf("Auto cache cleanup failed: %v", err)
-		} else {
-			logrus.Infof("Auto cleanup %d cache file(s)", cleanCount)
-		}
-	})
+	if vars.AutoCleanDays > 0 || vars.AutoCleanItems > 0 {
+		// 后台线程自动清理本地缓存
+		go utils.RunTickerTask(context.Background(), time.Hour, true, func(context.Context) {
+			logrus.Infoln("Auto cache cleanup start...")
+			cleanCount, err := utils.CleanCacheByModTime(utils.DataPath("cache"), vars.AutoCleanDays, vars.AutoCleanItems)
+			if err != nil {
+				logrus.Errorf("Auto cache cleanup failed: %v", err)
+			} else {
+				logrus.Infof("Auto cleanup %d cache file(s)", cleanCount)
+			}
+		})
+	}
 
 	return server.Run(vars.ListenAddr)
 }

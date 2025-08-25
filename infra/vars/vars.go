@@ -7,15 +7,17 @@ import (
 )
 
 var (
-	DebugMode  bool
-	ListenAddr string
-	DataPath   string
-	Secret     string
-	Database   *gorm.DB
-	S3Config   S3Conf
-	S3Client   *s3.Client
-	HashID     *hashids.HashID
-	CwebpBin   string
+	DebugMode      bool
+	ListenAddr     string
+	DataPath       string
+	Secret         string
+	Database       *gorm.DB
+	S3Config       S3Conf
+	S3Client       *s3.Client
+	HashID         *hashids.HashID
+	CwebpBin       string
+	AutoCleanDays  int
+	AutoCleanItems int
 )
 
 type S3Conf struct {
