@@ -104,3 +104,26 @@ func (s *imageService) Rename(id int64, name string) error {
 	}
 	return nil
 }
+
+func (s *imageService) GetAllPublic(page, pageSize int) ([]common.Image, int64, error) {
+	folders, err := ImageFolderService.GetAllPublicFolder()
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	publicFolderID := make([]int64, len(folders))
+	for _, folder := range folders {
+		publicFolderID = append(publicFolderID, folder.ID)
+	}
+
+	var total int64
+	if err := vars.Database.Model(&common.Image{}).Where("folder_id IN ?", publicFolderID).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var images []common.Image
+	if err := vars.Database.Where("folder_id IN ?", publicFolderID).Offset((page - 1) * pageSize).Limit(pageSize).Find(&images).Error; err != nil {
+		return nil, 0, err
+	}
+	return images, total, nil
+}

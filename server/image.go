@@ -84,3 +84,11 @@ func GetImageHandler(c *fiber.Ctx) error {
 	return c.SendFile(localPath)
 
 }
+
+func GetBingTodayImage(c *fiber.Ctx) error {
+	url, err := utils.GetBingTodayImage()
+	if err != nil {
+		return err
+	}
+	return c.Redirect(url)
+}

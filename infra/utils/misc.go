@@ -2,10 +2,13 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -130,4 +133,28 @@ func RunTickerTask(ctx context.Context, interval time.Duration, firstNow bool, t
 			return
 		}
 	}
+}
+
+func GetBingTodayImage() (string, error) {
+	resp, err := http.Get("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var data struct {
+		Images []struct {
+			URL string `json:"url"`
+		} `json:"images"`
+	}
+	if err := json.Unmarshal(body, &data); err != nil {
+		return "", err
+	}
+	if len(data.Images) == 0 {
+		return "", fmt.Errorf("no image found")
+	}
+	return "https://www.bing.com" + data.Images[0].URL, nil
 }

@@ -107,3 +107,46 @@ func (s *imageFolderService) SetPublic(id int64, public bool) error {
 	}
 	return nil
 }
+
+func (s *imageFolderService) GetAllPublicFolder() ([]common.ImageFolder, error) {
+	var folders []common.ImageFolder
+	if err := vars.Database.Where("public = ?", true).Find(&folders).Error; err != nil {
+		return nil, err
+	}
+	// 生成map快速过滤
+	publicFolderMap := make(map[int64]common.ImageFolder)
+	for _, folder := range folders {
+		publicFolderMap[folder.ID] = folder
+	}
+
+	// 过滤出整个链路都是public的文件夹
+	var result []common.ImageFolder
+	for _, folder := range folders {
+		isAllPublic := true
+		currentID := folder.ParentID
+
+		// 递归向上检查每个父文件夹是否都是public
+		for currentID != 0 { // 0 表示根目录
+			parentFolder, ok := publicFolderMap[currentID]
+			if !ok {
+				isAllPublic = false
+				break
+			}
+
+			// 如果父文件夹不是public，则整个链路不是public
+			if !parentFolder.Public {
+				isAllPublic = false
+				break
+			}
+
+			currentID = parentFolder.ParentID
+		}
+
+		// 如果整个链路都是public，则加入结果集
+		if isAllPublic {
+			result = append(result, folder)
+		}
+	}
+
+	return result, nil
+}

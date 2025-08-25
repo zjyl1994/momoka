@@ -12,6 +12,7 @@ func Run(listenAddr string) error {
 	})
 	logrus.Infof("Momoka running at %s", listenAddr)
 	app.Get("/i/:filename", GetImageHandler)
+	app.Get("/bing", GetBingTodayImage)
 
 	adminAPI := app.Group("/admin-api")
 	adminAPI.Post("/folder", adminapi.CreateFolderHandler)
