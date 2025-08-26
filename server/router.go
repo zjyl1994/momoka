@@ -7,6 +7,7 @@ import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/server/adminapi"
@@ -26,7 +27,21 @@ func Run(listenAddr string) error {
 	apiGroup := app.Group("/api")
 	apiGroup.Get("/bing", api.GetBingTodayImageHandler)
 	apiGroup.Get("/masonry", api.GetMasonryImageHandler)
-	apiGroup.Post("/login", api.LoginHandler)
+	apiGroup.Post("/login", limiter.New(limiter.Config{
+		Max:        15, // 每个 IP 每分钟最多 15 次请求
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			if ip := c.Get("X-Real-IP"); ip != "" {
+				return ip
+			}
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "请求过于频繁，请稍后再试。",
+			})
+		},
+	}), api.LoginHandler)
 
 	adminAPI := app.Group("/admin-api", jwtware.New(jwtware.Config{
 		SigningKey:  jwtware.SigningKey{Key: []byte(vars.Secret)},
