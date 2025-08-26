@@ -15,6 +15,8 @@ import (
 	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/server"
+	"github.com/zjyl1994/momoka/service"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -81,7 +83,19 @@ func Startup() (err error) {
 		return err
 	}
 
-	err = vars.Database.AutoMigrate(&common.Image{}, &common.ImageFolder{})
+	err = vars.Database.AutoMigrate(&common.Image{}, &common.ImageFolder{}, &common.Setting{})
+	if err != nil {
+		return err
+	}
+	err = service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_USER, common.DEFAULT_ADMIN_USER)
+	if err != nil {
+		return err
+	}
+	defaultPass, err := bcrypt.GenerateFromPassword([]byte(common.DEFAULT_ADMIN_PASSWORD), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	err = service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_PASSWORD, string(defaultPass))
 	if err != nil {
 		return err
 	}
