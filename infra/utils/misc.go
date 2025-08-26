@@ -18,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/gofiber/fiber/v2"
+	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
 )
 
@@ -179,4 +181,12 @@ func HttpDownload(url, filePath string) error {
 	defer f.Close()
 	_, err = io.Copy(f, resp.Body)
 	return err
+}
+
+func GetImageURL(c *fiber.Ctx, img *common.Image) (string, error) {
+	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.HID_TYPE_IMAGE, img.ID})
+	if err != nil {
+		return "", err
+	}
+	return c.BaseURL() + "/i/" + imageHashId + img.ExtName, nil
 }

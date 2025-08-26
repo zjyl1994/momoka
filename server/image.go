@@ -86,7 +86,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 
 }
 
-func GetBingTodayImage(c *fiber.Ctx) error {
+func GetBingTodayImageHandler(c *fiber.Ctx) error {
 	todayStr := time.Now().Format("20060102")
 	todayImageCachePath := utils.DataPath("cache", "bing-"+todayStr+".jpg")
 	if utils.FileExists(todayImageCachePath) {
@@ -103,11 +103,32 @@ func GetBingTodayImage(c *fiber.Ctx) error {
 		if err != nil {
 			return "", err
 		}
-		logrus.Debugln("Today bing image downloaded.")
+		logrus.Debugln("Today bing image cached.")
 		return todayImageCachePath, nil
 	})
 	if err != nil {
 		return err
 	}
 	return c.SendFile(todayImageCachePath)
+}
+
+func GetMasonryImageHandler(c *fiber.Ctx) error {
+	page := c.QueryInt("page", 1)
+	size := c.QueryInt("size", 10)
+	images, total, err := service.ImageService.GetAllPublic(page, size)
+	if err != nil {
+		return err
+	}
+	result := make(map[int64]string)
+	for _, image := range images {
+		imageURL, err := utils.GetImageURL(c, &image)
+		if err != nil {
+			return err
+		}
+		result[image.ID] = imageURL
+	}
+	return c.JSON(fiber.Map{
+		"total": total,
+		"list":  result,
+	})
 }

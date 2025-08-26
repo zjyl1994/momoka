@@ -110,10 +110,14 @@ func (s *imageService) GetAllPublic(page, pageSize int) ([]common.Image, int64, 
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	publicFolderID := make([]int64, len(folders))
 	for _, folder := range folders {
 		publicFolderID = append(publicFolderID, folder.ID)
+	}
+
+	if len(publicFolderID) == 0 {
+		return []common.Image{}, 0, nil
 	}
 
 	var total int64

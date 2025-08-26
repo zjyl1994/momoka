@@ -31,7 +31,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 		return errors.New("image not found")
 	}
 
-	imageURL, err := getImageURL(c, img)
+	imageURL, err := utils.GetImageURL(c, img)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func CreateImageHandler(c *fiber.Ctx) error {
 	logrus.Debugf("image_id: %d\n", imgID)
 
 	// 生成链接
-	imageURL, err := getImageURL(c, imgObj)
+	imageURL, err := utils.GetImageURL(c, imgObj)
 	if err != nil {
 		return err
 	}
@@ -195,12 +195,4 @@ func parseFolderID(val string) (int64, error) {
 		return 0, errors.New("invalid folder id")
 	}
 	return folderId[1], nil
-}
-
-func getImageURL(c *fiber.Ctx, img *common.Image) (string, error) {
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.HID_TYPE_IMAGE, img.ID})
-	if err != nil {
-		return "", err
-	}
-	return c.BaseURL() + "/i/" + imageHashId + img.ExtName, nil
 }

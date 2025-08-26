@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
+	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/service"
 )
 
@@ -61,7 +62,7 @@ func GetFolderHandler(c *fiber.Ctx) error {
 		}
 
 		for i, item := range images {
-			imageURL, err := getImageURL(c, item)
+			imageURL, err := utils.GetImageURL(c, item)
 			if err != nil {
 				logrus.Errorf("getImageURL failed, err: %v", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
