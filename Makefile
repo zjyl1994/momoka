@@ -2,10 +2,10 @@ TARGET=momoka
 
 UPX := $(shell command -v upx 2>/dev/null)
 
-all: clean build compress
+all: clean build-fe build compress
 
-# build-fe:
-# 	cd webui && pnpm install && pnpm build
+build-fe:
+	cd webui && pnpm install && pnpm build
 
 build:
 	go build -ldflags "-s -w" -o $(TARGET) .
@@ -18,4 +18,4 @@ else
 endif
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) && rm -rf webui/dist
