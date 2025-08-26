@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/server/adminapi"
@@ -44,8 +45,14 @@ func Run(listenAddr string) error {
 	}), api.LoginHandler)
 
 	adminAPI := app.Group("/admin-api", jwtware.New(jwtware.Config{
-		SigningKey:  jwtware.SigningKey{Key: []byte(vars.Secret)},
+		SigningKey:  jwtware.SigningKey{JWTAlg: jwt.SigningMethodHS256.Alg(), Key: []byte(vars.Secret)},
 		TokenLookup: "header:Authorization,query:token,cookie:momoka_token",
+		AuthScheme:  "Bearer",
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "密钥不可用或已过期",
+			})
+		},
 	}))
 	adminAPI.Post("/folder", adminapi.CreateFolderHandler)
 	adminAPI.Get("/folder", adminapi.GetFolderHandler)
@@ -55,6 +62,8 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/image", adminapi.GetImageHandler)
 	adminAPI.Delete("/image", adminapi.DeleteImageHandler)
 	adminAPI.Patch("/image", adminapi.UpdateImageHandler)
+	adminAPI.Get("/setting", adminapi.ListSettingHandler)
+	adminAPI.Patch("/setting", adminapi.UpdateSettingHandler)
 
 	app.Use("/", filesystem.New(filesystem.Config{
 		Root:         http.FS(webui.WebUI),

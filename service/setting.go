@@ -65,3 +65,18 @@ func (s *settingService) SetIfNotExists(name, data string) error {
 	}
 	return nil
 }
+
+func (s *settingService) BulkSet(settings map[string]string) error {
+	return vars.Database.Transaction(func(tx *gorm.DB) error {
+		for k, v := range settings {
+			setting := common.Setting{
+				Name: k,
+				Data: v,
+			}
+			if err := tx.Save(&setting).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
