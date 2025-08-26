@@ -158,3 +158,25 @@ func GetBingTodayImage() (string, error) {
 	}
 	return "https://www.bing.com" + data.Images[0].URL, nil
 }
+
+func HttpDownload(url, filePath string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("http status error: %d", resp.StatusCode)
+	}
+	dir := filepath.Dir(filePath)
+	if err = os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, resp.Body)
+	return err
+}
