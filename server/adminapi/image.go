@@ -177,7 +177,8 @@ func CreateImageHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.SendString(imageURL)
+	imgObj.URL = imageURL
+	return c.JSON(imgObj)
 }
 
 func parseFolderID(val string) (int64, error) {
