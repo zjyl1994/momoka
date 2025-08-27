@@ -162,8 +162,8 @@ const FileManager = () => {
   };
 
   return (
-    <div style={{ height: '100%' }}>
-      <Layout style={{ height: '100%', background: '#fff' }}>
+    <div style={{ height: '100vh', overflow: 'hidden' }}>
+      <Layout style={{ height: '100vh', background: '#fff' }}>
         {/* 左侧文件夹树 */}
         <Sider
           width={300}
@@ -173,21 +173,25 @@ const FileManager = () => {
           style={{
             background: '#fafafa',
             borderRight: '1px solid #f0f0f0',
-            height: '100%',
-            overflow: 'auto'
+            height: '100vh',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
           }}
           collapsedWidth={0}
           trigger={null}
         >
-          <FolderTree
-            onFolderSelect={handleFolderSelect}
-            selectedFolderId={selectedFolderId}
-            onFolderUpdate={handleFolderUpdate}
-          />
+          <div style={{ height: '100%', overflow: 'hidden' }}>
+            <FolderTree
+              onFolderSelect={handleFolderSelect}
+              selectedFolderId={selectedFolderId}
+              onFolderUpdate={handleFolderUpdate}
+            />
+          </div>
         </Sider>
 
         {/* 右侧内容区域 */}
-        <Layout style={{ background: '#fff' }}>
+        <Layout style={{ background: '#fff', height: '100vh', overflow: 'hidden' }}>
           {/* 顶部工具栏 */}
           <div
             style={{
@@ -243,7 +247,7 @@ const FileManager = () => {
 
           {/* 主内容区域 */}
           <Content 
-            style={{ height: 'calc(100% - 73px)', background: '#fff', position: 'relative' }}
+            style={{ height: 'calc(100% - 73px)', background: '#fff', position: 'relative', overflow: 'hidden' }}
             onDragOver={(e) => {
               e.preventDefault();
               setDragOver(true);

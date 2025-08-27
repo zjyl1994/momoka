@@ -400,7 +400,7 @@ const ImageWaterfall = ({ folderId, onImageUpdate, folderTree }) => {
   };
 
   return (
-    <div ref={containerRef} style={{ height: '100%', overflow: 'auto', padding: '16px' }}>
+    <div ref={containerRef} style={{ height: '100%', overflow: 'hidden', padding: '16px' }}>
       {renderWaterfall()}
 
       {/* 右键菜单 */}

@@ -177,7 +177,7 @@ func (s *imageFolderService) GetFolderTree() ([]*common.FolderTree, error) {
 	}
 
 	// 构建树形结构
-	var rootFolders []*common.FolderTree
+	rootFolders := make([]*common.FolderTree, 0)
 	for _, folder := range folders {
 		if folder.ParentID == 0 {
 			// 根文件夹

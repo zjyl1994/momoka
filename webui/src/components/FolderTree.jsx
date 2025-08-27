@@ -39,6 +39,9 @@ const FolderTree = ({ onFolderSelect, selectedFolderId, onFolderUpdate }) => {
         const data = await response.json();
         const formattedData = formatTreeData(data);
         setTreeData(formattedData);
+        // 设置所有节点为展开状态
+        const allKeys = getAllKeys(formattedData);
+        setExpandedKeys(allKeys);
       } else {
         message.error('获取文件夹树失败');
       }
@@ -48,6 +51,21 @@ const FolderTree = ({ onFolderSelect, selectedFolderId, onFolderUpdate }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 获取所有节点的 key
+  const getAllKeys = (nodes) => {
+    const keys = [];
+    const traverse = (nodeList) => {
+      nodeList.forEach(node => {
+        keys.push(node.key);
+        if (node.children && node.children.length > 0) {
+          traverse(node.children);
+        }
+      });
+    };
+    traverse(nodes);
+    return keys;
   };
 
   // 格式化树数据
@@ -185,10 +203,6 @@ const FolderTree = ({ onFolderSelect, selectedFolderId, onFolderUpdate }) => {
         setNewFolderName('');
         fetchFolderTree();
         onFolderUpdate && onFolderUpdate();
-        // 展开父文件夹
-        if (!expandedKeys.includes(parentFolderId.toString())) {
-          setExpandedKeys([...expandedKeys, parentFolderId.toString()]);
-        }
       } else {
         message.error('创建文件夹失败');
       }
@@ -369,6 +383,7 @@ const FolderTree = ({ onFolderSelect, selectedFolderId, onFolderUpdate }) => {
             border: '1px dashed #d9d9d9',
             borderRadius: '6px',
             color: '#666',
+            background: 'transparent',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
