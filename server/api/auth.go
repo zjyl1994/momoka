@@ -14,9 +14,10 @@ import (
 func LoginHandler(c *fiber.Ctx) error {
 	// 从请求体中获取用户名和密码
 	var loginReq struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		Remember bool   `json:"remember"`
+		Username  string `json:"username"`
+		Password  string `json:"password"`
+		Remember  bool   `json:"remember"`
+		SetCookie bool   `json:"set_cookie"`
 	}
 	if err := c.BodyParser(&loginReq); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -82,13 +83,15 @@ func LoginHandler(c *fiber.Ctx) error {
 	}
 
 	// 设置Cookie
-	cookie := fiber.Cookie{
-		Name:     "momoka_token",
-		Value:    t,
-		Expires:  time.Now().Add(tokenExpire),
-		HTTPOnly: true,
+	if loginReq.SetCookie {
+		cookie := fiber.Cookie{
+			Name:     "momoka_token",
+			Value:    t,
+			Expires:  time.Now().Add(tokenExpire),
+			HTTPOnly: true,
+		}
+		c.Cookie(&cookie)
 	}
-	c.Cookie(&cookie)
 
 	// 返回JWT令牌
 	return c.JSON(fiber.Map{
