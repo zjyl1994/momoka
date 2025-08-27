@@ -1,35 +1,99 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminLayout from './components/AdminLayout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import ImageList from './pages/ImageList';
+import ImageUpload from './pages/ImageUpload';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <ConfigProvider locale={zhCN}>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* 登录页面 */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* 受保护的管理后台路由 */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              {/* 仪表板 */}
+              <Route index element={<Dashboard />} />
+              
+              {/* 图片管理 */}
+              <Route path="images">
+                <Route path="list" element={<ImageList />} />
+                <Route path="upload" element={<ImageUpload />} />
+              </Route>
+              
+              {/* 其他管理页面的占位符 */}
+              <Route path="folders" element={
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                  <h2>文件夹管理</h2>
+                  <p>功能开发中...</p>
+                </div>
+              } />
+              
+              <Route path="users" element={
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                  <h2>用户管理</h2>
+                  <p>功能开发中...</p>
+                </div>
+              } />
+              
+              <Route path="analytics" element={
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                  <h2>数据统计</h2>
+                  <p>功能开发中...</p>
+                </div>
+              } />
+              
+              <Route path="tags" element={
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                  <h2>标签管理</h2>
+                  <p>功能开发中...</p>
+                </div>
+              } />
+              
+              <Route path="settings" element={
+                <div style={{ padding: '24px', textAlign: 'center' }}>
+                  <h2>系统设置</h2>
+                  <p>功能开发中...</p>
+                </div>
+              } />
+            </Route>
+            
+            {/* 根路径重定向到管理后台 */}
+            <Route path="/" element={<Navigate to="/admin" replace />} />
+            
+            {/* 404 页面 */}
+            <Route path="*" element={
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100vh',
+                flexDirection: 'column'
+              }}>
+                <h1>404</h1>
+                <p>页面不存在</p>
+                <a href="/admin">返回首页</a>
+              </div>
+            } />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ConfigProvider>
+  );
 }
 
-export default App
+export default App;
