@@ -32,21 +32,6 @@ const AdminLayout = () => {
   // 用户下拉菜单
   const userMenuItems = [
     {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人资料',
-      onClick: () => navigate('/admin/profile')
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: '账户设置',
-      onClick: () => navigate('/admin/account-settings')
-    },
-    {
-      type: 'divider'
-    },
-    {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: '退出登录',
@@ -63,12 +48,8 @@ const AdminLayout = () => {
       list: '图片列表',
       upload: '上传图片',
       folders: '文件夹管理',
-      users: '用户管理',
       analytics: '数据统计',
-      tags: '标签管理',
       settings: '系统设置',
-      profile: '个人资料',
-      'account-settings': '账户设置'
     };
 
     const breadcrumbItems = pathSnippets.map((snippet, index) => {
@@ -98,6 +79,7 @@ const AdminLayout = () => {
           left: 0,
           top: 0,
           bottom: 0,
+          background: '#001529'
         }}
       >
         <Sidebar collapsed={collapsed} />
@@ -107,15 +89,16 @@ const AdminLayout = () => {
         <Header
           style={{
             padding: '0 24px',
-            background: colorBgContainer,
+            background: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #f0f0f0',
+            borderBottom: '1px solid #e8e8e8',
             position: 'sticky',
             top: 0,
             zIndex: 1000,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+            height: '64px'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -161,8 +144,9 @@ const AdminLayout = () => {
         
         <Content
           style={{
-            margin: '16px',
+            margin: '24px',
             minHeight: 'calc(100vh - 112px)',
+            background: '#f0f2f5'
           }}
         >
           {/* 面包屑导航 */}
@@ -179,9 +163,10 @@ const AdminLayout = () => {
             style={{
               padding: 0,
               minHeight: 'calc(100vh - 160px)',
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-              overflow: 'hidden'
+              background: '#ffffff',
+              borderRadius: '6px',
+              overflow: 'hidden',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
             }}
           >
             <Outlet />

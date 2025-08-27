@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, message, Spin } from 'antd';
+import { Form, Input, Button, Card, message, Spin, Checkbox, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -7,21 +7,23 @@ import './Login.css';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const onFinish = async (values) => {
     setLoading(true);
+    setError(''); // 清除之前的错误信息
     try {
-      const result = await login(values.username, values.password);
+      const result = await login(values.username, values.password, values.remember);
       if (result.success) {
         message.success('登录成功');
         navigate('/admin');
       } else {
-        message.error(result.message || '登录失败');
+        setError(result.message || '登录失败，请检查用户名和密码');
       }
     } catch (error) {
-      message.error('登录失败，请重试');
+      setError('网络错误，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -36,6 +38,17 @@ const Login = () => {
               <h1>Momoka 管理系统</h1>
               <p>请登录您的账户</p>
             </div>
+            
+            {error && (
+              <Alert
+                message={error}
+                type="error"
+                showIcon
+                style={{ marginBottom: '16px' }}
+                closable
+                onClose={() => setError('')}
+              />
+            )}
             
             <Form
               name="login"
@@ -75,6 +88,12 @@ const Login = () => {
               </Form.Item>
 
               <Form.Item>
+                <Form.Item name="remember" valuePropName="checked" noStyle>
+                  <Checkbox>记住我</Checkbox>
+                </Form.Item>
+              </Form.Item>
+
+              <Form.Item>
                 <Button
                   type="primary"
                   htmlType="submit"
@@ -88,7 +107,7 @@ const Login = () => {
             </Form>
             
             <div className="login-footer">
-              <p>默认账户: admin / admin</p>
+              <p>请使用管理员账户登录</p>
             </div>
           </Card>
         </div>

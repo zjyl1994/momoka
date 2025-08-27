@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { validateToken } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -16,37 +17,78 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 检查本地存储中的认证状态
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      
+      if (token && userData) {
+        // 验证token是否有效
+        const isValid = await validateToken();
+        if (isValid) {
+          setIsAuthenticated(true);
+          setUser(JSON.parse(userData));
+        } else {
+          // token无效，清除本地存储
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
+      setLoading(false);
+    };
     
-    if (token && userData) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(userData));
-    }
-    setLoading(false);
+    checkAuth();
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (username, password, remember = false) => {
     try {
-      // 这里应该调用实际的登录API
-      // 现在使用模拟登录
-      if (username === 'admin' && password === 'admin') {
-        const userData = { id: 1, username: 'admin', name: '管理员' };
-        const token = 'mock-jwt-token';
-        
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        setIsAuthenticated(true);
-        setUser(userData);
-        
-        return { success: true };
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          remember,
+          set_cookie: false // 使用localStorage而不是cookie
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          const userData = { username, name: username };
+          
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          setIsAuthenticated(true);
+          setUser(userData);
+          
+          return { success: true };
+        } else {
+          return { success: false, message: data.error || '登录失败' };
+        }
       } else {
-        return { success: false, message: '用户名或密码错误' };
+        // 处理HTTP错误状态
+        let errorMessage = '登录失败';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+        } catch {
+          // 如果响应不是JSON格式，尝试获取文本
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+          } catch {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          }
+        }
+        return { success: false, message: errorMessage };
       }
     } catch (error) {
-      return { success: false, message: '登录失败，请重试' };
+      console.error('Login error:', error);
+      return { success: false, message: '网络错误，请重试' };
     }
   };
 

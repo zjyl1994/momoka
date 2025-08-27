@@ -5,17 +5,15 @@ import {
   DashboardOutlined,
   FileImageOutlined,
   FolderOutlined,
-  UserOutlined,
   SettingOutlined,
   BarChartOutlined,
   CloudUploadOutlined,
-  TagsOutlined
 } from '@ant-design/icons';
 
 const Sidebar = ({ collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // 菜单项配置
   const menuItems = [
     {
@@ -24,20 +22,14 @@ const Sidebar = ({ collapsed }) => {
       label: '仪表板'
     },
     {
-      key: '/admin/images',
-      icon: <FileImageOutlined />,
-      label: '图片管理',
-      children: [
-        {
-          key: '/admin/images/list',
-          label: '图片列表'
-        },
-        {
-          key: '/admin/images/upload',
-          icon: <CloudUploadOutlined />,
-          label: '上传图片'
-        }
-      ]
+      key: '/admin/images/upload',
+      icon: <CloudUploadOutlined />,
+      label: '上传图片'
+    },
+    {
+      key: '/admin/images/list',
+      icon:<FileImageOutlined/>,
+      label: '图片列表'
     },
     {
       key: '/admin/folders',
@@ -45,19 +37,9 @@ const Sidebar = ({ collapsed }) => {
       label: '文件夹管理'
     },
     {
-      key: '/admin/users',
-      icon: <UserOutlined />,
-      label: '用户管理'
-    },
-    {
       key: '/admin/analytics',
       icon: <BarChartOutlined />,
       label: '数据统计'
-    },
-    {
-      key: '/admin/tags',
-      icon: <TagsOutlined />,
-      label: '标签管理'
     },
     {
       key: '/admin/settings',
@@ -78,7 +60,7 @@ const Sidebar = ({ collapsed }) => {
     if (menuItems.find(item => item.key === pathname)) {
       return [pathname];
     }
-    
+
     // 检查子菜单
     for (const item of menuItems) {
       if (item.children) {
@@ -88,7 +70,7 @@ const Sidebar = ({ collapsed }) => {
         }
       }
     }
-    
+
     // 默认选中仪表板
     return ['/admin'];
   };
@@ -97,10 +79,10 @@ const Sidebar = ({ collapsed }) => {
   const getOpenKeys = () => {
     const pathname = location.pathname;
     const openKeys = [];
-    
+
     for (const item of menuItems) {
       if (item.children) {
-        const hasActiveChild = item.children.some(child => 
+        const hasActiveChild = item.children.some(child =>
           pathname.startsWith(child.key)
         );
         if (hasActiveChild) {
@@ -108,13 +90,13 @@ const Sidebar = ({ collapsed }) => {
         }
       }
     }
-    
+
     return openKeys;
   };
 
   return (
     <div style={{ height: '100%', borderRight: 0 }}>
-      <div 
+      <div
         style={{
           height: '64px',
           display: 'flex',
@@ -126,9 +108,9 @@ const Sidebar = ({ collapsed }) => {
         }}
       >
         {!collapsed && (
-          <h2 style={{ 
-            color: '#fff', 
-            margin: 0, 
+          <h2 style={{
+            color: '#fff',
+            margin: 0,
             fontSize: '18px',
             fontWeight: 600
           }}>
@@ -152,14 +134,14 @@ const Sidebar = ({ collapsed }) => {
           </div>
         )}
       </div>
-      
+
       <Menu
         mode="inline"
         theme="dark"
         selectedKeys={getSelectedKeys()}
         defaultOpenKeys={getOpenKeys()}
-        style={{ 
-          height: 'calc(100% - 64px)', 
+        style={{
+          height: 'calc(100% - 64px)',
           borderRight: 0,
           background: '#001529'
         }}
