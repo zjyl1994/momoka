@@ -30,7 +30,7 @@ func CleanCacheByModTime(cacheDir string, maxAgeDays, maxFiles int) (cleanCount 
 		return nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("Walk file failed, err: %v", err)
+		return 0, fmt.Errorf("walk file failed, err: %v", err)
 	}
 
 	var remaining []struct {

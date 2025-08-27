@@ -22,19 +22,19 @@ const Sidebar = ({ collapsed }) => {
       label: '仪表板'
     },
     {
-      key: '/admin/images/upload',
+      key: '/admin/images-upload',
       icon: <CloudUploadOutlined />,
       label: '上传图片'
     },
     {
-      key: '/admin/images/list',
+      key: '/admin/images-list',
       icon:<FileImageOutlined/>,
       label: '图片列表'
     },
     {
-      key: '/admin/folders',
+      key: '/admin/files',
       icon: <FolderOutlined />,
-      label: '文件夹管理'
+      label: '文件管理'
     },
     {
       key: '/admin/analytics',

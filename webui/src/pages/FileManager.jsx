@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Card, Breadcrumb, Button, message, Spin } from 'antd';
-import { CloudUploadOutlined, HomeOutlined, FolderOutlined } from '@ant-design/icons';
+import { Layout, Card, Breadcrumb, Button, message, Spin, Modal, Input, Checkbox } from 'antd';
+import { CloudUploadOutlined, HomeOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import FolderTree from '../components/FolderTree';
-import ImageWaterfall from '../components/ImageWaterfall';
+import FileListView from '../components/FileListView';
 import { authFetch } from '../utils/api';
 
-const { Sider, Content } = Layout;
+const { Content } = Layout;
 
 const FileManager = () => {
   const [selectedFolderId, setSelectedFolderId] = useState(0);
   const [folderTree, setFolderTree] = useState([]);
   const [folderPath, setFolderPath] = useState([{ id: 0, name: '根目录' }]);
   const [uploading, setUploading] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [createFolderModalVisible, setCreateFolderModalVisible] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderPublic, setNewFolderPublic] = useState(false);
+
   const [dragOver, setDragOver] = useState(false);
   const navigate = useNavigate();
 
@@ -110,6 +112,43 @@ const FileManager = () => {
     setSelectedFolderId(folderId);
   };
 
+  // 处理新建文件夹
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      message.error('文件夹名称不能为空');
+      return;
+    }
+
+    try {
+      const response = await authFetch('/admin-api/folder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: newFolderName.trim(),
+          parent_id: selectedFolderId,
+          public: newFolderPublic
+        })
+      });
+
+      if (response.ok) {
+        message.success('文件夹创建成功');
+        setCreateFolderModalVisible(false);
+        setNewFolderName('');
+        setNewFolderPublic(false);
+        handleFolderUpdate();
+        // 刷新当前文件夹内容
+        window.location.reload();
+      } else {
+        message.error('创建文件夹失败');
+      }
+    } catch (error) {
+      console.error('创建文件夹失败:', error);
+      message.error('创建文件夹失败');
+    }
+  };
+
   // 处理文件上传
   const handleFileUpload = async (files) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
@@ -164,33 +203,7 @@ const FileManager = () => {
   return (
     <div style={{ height: '100vh', overflow: 'hidden' }}>
       <Layout style={{ height: '100vh', background: '#fff' }}>
-        {/* 左侧文件夹树 */}
-        <Sider
-          width={300}
-          collapsible
-          collapsed={collapsed}
-          onCollapse={setCollapsed}
-          style={{
-            background: '#fafafa',
-            borderRight: '1px solid #f0f0f0',
-            height: '100vh',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-          collapsedWidth={0}
-          trigger={null}
-        >
-          <div style={{ height: '100%', overflow: 'hidden' }}>
-            <FolderTree
-              onFolderSelect={handleFolderSelect}
-              selectedFolderId={selectedFolderId}
-              onFolderUpdate={handleFolderUpdate}
-            />
-          </div>
-        </Sider>
-
-        {/* 右侧内容区域 */}
+        {/* 主内容区域 */}
         <Layout style={{ background: '#fff', height: '100vh', overflow: 'hidden' }}>
           {/* 顶部工具栏 */}
           <div
@@ -204,14 +217,6 @@ const FileManager = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {/* 折叠按钮 */}
-              <Button
-                type="text"
-                icon={<FolderOutlined />}
-                onClick={() => setCollapsed(!collapsed)}
-                style={{ padding: '4px 8px' }}
-              />
-              
               {/* 面包屑导航 */}
               <Breadcrumb>
                 {folderPath.map((folder, index) => (
@@ -235,6 +240,12 @@ const FileManager = () => {
 
             {/* 右侧操作按钮 */}
             <div style={{ display: 'flex', gap: '8px' }}>
+              <Button
+                icon={<PlusOutlined />}
+                onClick={() => setCreateFolderModalVisible(true)}
+              >
+                新建文件夹
+              </Button>
               <Button
                 type="primary"
                 icon={<CloudUploadOutlined />}
@@ -267,11 +278,13 @@ const FileManager = () => {
               }
             }}
           >
-            {/* 图片瀑布流 */}
-            <ImageWaterfall
+            {/* 文件列表视图 */}
+            <FileListView
               folderId={selectedFolderId}
               onImageUpdate={handleImageUpdate}
+              onFolderUpdate={handleFolderUpdate}
               folderTree={folderTree}
+              onFolderSelect={handleFolderSelect}
             />
             
             {/* 拖拽提示层 */}
@@ -330,7 +343,34 @@ const FileManager = () => {
         </Layout>
       </Layout>
 
-
+      {/* 新建文件夹模态框 */}
+      <Modal
+        title="新建文件夹"
+        open={createFolderModalVisible}
+        onOk={handleCreateFolder}
+        onCancel={() => {
+           setCreateFolderModalVisible(false);
+           setNewFolderName('');
+           setNewFolderPublic(false);
+         }}
+        okText="创建"
+        cancelText="取消"
+      >
+        <div style={{ marginBottom: '16px' }}>
+           <Input
+             value={newFolderName}
+             onChange={(e) => setNewFolderName(e.target.value)}
+             placeholder="请输入文件夹名称"
+             onPressEnter={handleCreateFolder}
+           />
+         </div>
+         <Checkbox
+           checked={newFolderPublic}
+           onChange={(e) => setNewFolderPublic(e.target.checked)}
+         >
+           公开文件夹
+         </Checkbox>
+      </Modal>
     </div>
   );
 };

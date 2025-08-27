@@ -86,7 +86,8 @@ func DeleteFolderHandler(c *fiber.Ctx) error {
 			"error": "root folder can not be deleted",
 		})
 	}
-	err := service.ImageFolderService.Delete(folderID)
+	// Use recursive delete to handle folders with content
+	err := service.ImageFolderService.DeleteRecursively(folderID)
 	if err != nil {
 		logrus.Errorf("Delete failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
