@@ -9,9 +9,12 @@ export const getToken = () => {
 export const authFetch = async (url, options = {}) => {
   const token = getToken();
   
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  const defaultHeaders = {};
+  
+  // 如果不是FormData，则设置Content-Type为application/json
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
   
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
