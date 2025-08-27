@@ -63,6 +63,7 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/image", adminapi.GetImageHandler)
 	adminAPI.Delete("/image", adminapi.DeleteImageHandler)
 	adminAPI.Patch("/image", adminapi.UpdateImageHandler)
+	adminAPI.Get("/image/all", adminapi.GetAllImageHandler)
 	adminAPI.Get("/setting", adminapi.ListSettingHandler)
 	adminAPI.Patch("/setting", adminapi.UpdateSettingHandler)
 

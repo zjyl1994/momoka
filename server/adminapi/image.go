@@ -197,3 +197,16 @@ func parseFolderID(val string) (int64, error) {
 	}
 	return folderId[1], nil
 }
+
+func GetAllImageHandler(c *fiber.Ctx) error {
+	page := c.QueryInt("page", 1)
+	size := c.QueryInt("size", 10)
+	images, total, err := service.ImageService.GetAll(page, size)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{
+		"images": images,
+		"total":  total,
+	})
+}

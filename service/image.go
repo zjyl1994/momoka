@@ -126,7 +126,20 @@ func (s *imageService) GetAllPublic(page, pageSize int) ([]common.Image, int64, 
 	}
 
 	var images []common.Image
-	if err := vars.Database.Where("folder_id IN ?", publicFolderID).Offset((page - 1) * pageSize).Limit(pageSize).Find(&images).Error; err != nil {
+	if err := vars.Database.Where("folder_id IN ?", publicFolderID).Order("create_time desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&images).Error; err != nil {
+		return nil, 0, err
+	}
+	return images, total, nil
+}
+
+func (s *imageService) GetAll(page, pageSize int) ([]common.Image, int64, error) {
+	var total int64
+	if err := vars.Database.Model(&common.Image{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var images []common.Image
+	if err := vars.Database.Order("create_time desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&images).Error; err != nil {
 		return nil, 0, err
 	}
 	return images, total, nil
