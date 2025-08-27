@@ -153,3 +153,14 @@ func UpdateFolderHandler(c *fiber.Ctx) error {
 	}
 	return c.JSON(folder)
 }
+
+func GetFolderTreeHandler(c *fiber.Ctx) error {
+	tree, err := service.ImageFolderService.GetFolderTree()
+	if err != nil {
+		logrus.Errorf("GetFolderTree failed, err: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "get folder tree failed",
+		})
+	}
+	return c.JSON(tree)
+}

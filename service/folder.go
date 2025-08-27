@@ -154,3 +154,41 @@ func (s *imageFolderService) GetAllPublicFolder() ([]common.ImageFolder, error) 
 		return result, nil
 	})
 }
+
+// GetFolderTree 获取所有文件夹的树形结构
+func (s *imageFolderService) GetFolderTree() ([]*common.FolderTree, error) {
+	var folders []common.ImageFolder
+	if err := vars.Database.Find(&folders).Error; err != nil {
+		return nil, err
+	}
+
+	// 创建文件夹映射
+	folderMap := make(map[int64]*common.FolderTree)
+	for _, folder := range folders {
+		folderMap[folder.ID] = &common.FolderTree{
+			ID:         folder.ID,
+			Name:       folder.Name,
+			ParentID:   folder.ParentID,
+			Public:     folder.Public,
+			CreateTime: folder.CreateTime,
+			UpdateTime: folder.UpdateTime,
+			Children:   []*common.FolderTree{},
+		}
+	}
+
+	// 构建树形结构
+	var rootFolders []*common.FolderTree
+	for _, folder := range folders {
+		if folder.ParentID == 0 {
+			// 根文件夹
+			rootFolders = append(rootFolders, folderMap[folder.ID])
+		} else {
+			// 子文件夹，添加到父文件夹的children中
+			if parent, exists := folderMap[folder.ParentID]; exists {
+				parent.Children = append(parent.Children, folderMap[folder.ID])
+			}
+		}
+	}
+
+	return rootFolders, nil
+}

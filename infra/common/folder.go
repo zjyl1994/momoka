@@ -14,3 +14,13 @@ type FolderReq struct {
 	Public   *bool   `json:"public"`
 	ParentID *int64  `json:"parent_id"`
 }
+
+type FolderTree struct {
+	ID         int64         `json:"id"`
+	Name       string        `json:"name"`
+	ParentID   int64         `json:"parent_id"`
+	Public     bool          `json:"public"`
+	CreateTime int64         `json:"create_time"`
+	UpdateTime int64         `json:"update_time"`
+	Children   []*FolderTree `json:"children"`
+}

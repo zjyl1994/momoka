@@ -58,6 +58,7 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/folder", adminapi.GetFolderHandler)
 	adminAPI.Patch("/folder", adminapi.UpdateFolderHandler)
 	adminAPI.Delete("/folder", adminapi.DeleteFolderHandler)
+	adminAPI.Get("/folder/tree", adminapi.GetFolderTreeHandler)
 	adminAPI.Post("/image", adminapi.CreateImageHandler)
 	adminAPI.Get("/image", adminapi.GetImageHandler)
 	adminAPI.Delete("/image", adminapi.DeleteImageHandler)
