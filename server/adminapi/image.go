@@ -201,9 +201,17 @@ func parseFolderID(val string) (int64, error) {
 func GetAllImageHandler(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	size := c.QueryInt("size", 10)
-	images, total, err := service.ImageService.GetAll(page, size)
+	keyword := c.Query("keyword")
+	images, total, err := service.ImageService.GetAll(keyword, page, size)
 	if err != nil {
 		return err
+	}
+	for i, v := range images {
+		imageURL, err := utils.GetImageURL(c, &v)
+		if err != nil {
+			return err
+		}
+		images[i].URL = imageURL
 	}
 	return c.JSON(fiber.Map{
 		"images": images,

@@ -132,14 +132,19 @@ func (s *imageService) GetAllPublic(page, pageSize int) ([]common.Image, int64, 
 	return images, total, nil
 }
 
-func (s *imageService) GetAll(page, pageSize int) ([]common.Image, int64, error) {
+func (s *imageService) GetAll(keyword string, page, pageSize int) ([]common.Image, int64, error) {
+	query := vars.Database.Model(&common.Image{})
+	if keyword != "" {
+		query = query.Where("file_name LIKE ?", "%"+keyword+"%")
+	}
+	
 	var total int64
-	if err := vars.Database.Model(&common.Image{}).Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	var images []common.Image
-	if err := vars.Database.Order("create_time desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&images).Error; err != nil {
+	if err := query.Order("create_time desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&images).Error; err != nil {
 		return nil, 0, err
 	}
 	return images, total, nil
