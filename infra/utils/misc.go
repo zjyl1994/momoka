@@ -60,7 +60,9 @@ func InitS3Client(ctx context.Context, conf vars.S3Conf) (*s3.Client, error) {
 
 	// 设置凭据
 	opts = append(opts, config.WithCredentialsProvider(creds))
-
+	if vars.DebugMode {
+		opts = append(opts, config.WithClientLogMode(aws.LogRequest|aws.LogResponse))
+	}
 	// 加载AWS配置
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {

@@ -39,33 +39,6 @@ const AdminLayout = () => {
     }
   ];
 
-  // 生成面包屑
-  const generateBreadcrumb = () => {
-    const pathSnippets = location.pathname.split('/').filter(i => i);
-    const breadcrumbNameMap = {
-      admin: '管理后台',
-      images: '图片管理',
-      list: '图片列表',
-      upload: '上传图片',
-      folders: '文件夹管理',
-      analytics: '数据统计',
-      settings: '系统设置',
-    };
-
-    const breadcrumbItems = pathSnippets.map((snippet, index) => {
-      const url = `/${pathSnippets.slice(0, index + 1).join('/')}`;
-      const isLast = index === pathSnippets.length - 1;
-      
-      return {
-        key: url,
-        title: breadcrumbNameMap[snippet] || snippet,
-        href: isLast ? undefined : url
-      };
-    });
-
-    return breadcrumbItems;
-  };
-
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider 
@@ -149,14 +122,6 @@ const AdminLayout = () => {
             background: '#f0f2f5'
           }}
         >
-          {/* 面包屑导航 */}
-          <Breadcrumb
-            items={generateBreadcrumb()}
-            style={{
-              marginBottom: '16px',
-              padding: '12px 0'
-            }}
-          />
           
           {/* 主要内容区域 */}
           <div

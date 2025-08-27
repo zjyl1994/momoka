@@ -1,33 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Card, Image, Button, Space, Input, Popconfirm, message } from 'antd';
-import { SearchOutlined, DeleteOutlined, EyeOutlined, DownloadOutlined, CopyOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Card, Image, Spin, Empty, message } from 'antd';
 import { authFetch } from '../utils/api';
-
-const { Search } = Input;
 
 const ImageList = () => {
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const [images, setImages] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(20);
+  const containerRef = useRef(null);
+  const [columnCount, setColumnCount] = useState(4);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
 
   // 获取图片列表
-  const fetchImages = async (page = 1, size = 10, keyword = '') => {
-    setLoading(true);
+  const fetchImages = async (page = 1, size = 20, isLoadMore = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        size: size.toString(),
-        ...(keyword && { keyword })
+        size: size.toString()
       });
       
       const response = await authFetch(`/admin-api/image/all?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setImages(data.images || []);
-        setTotal(data.total || 0);
+        const newImages = data.images || [];
+        
+        if (isLoadMore) {
+          setImages(prev => [...prev, ...newImages]);
+        } else {
+          setImages(newImages);
+        }
+        
+        // 检查是否还有更多数据
+        setHasMore(newImages.length === size);
       } else {
         message.error('获取图片列表失败');
       }
@@ -36,46 +50,54 @@ const ImageList = () => {
       message.error('获取图片列表失败');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  // 响应式列数计算
+  const updateColumnCount = useCallback(() => {
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      const minColumnWidth = 250; // 最小列宽
+      const gap = 16; // 间距
+      const newColumnCount = Math.max(1, Math.floor((containerWidth + gap) / (minColumnWidth + gap)));
+      setColumnCount(newColumnCount);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchImages(currentPage, pageSize, searchText);
-  }, [currentPage, pageSize, searchText]);
+    updateColumnCount();
+    window.addEventListener('resize', updateColumnCount);
+    return () => window.removeEventListener('resize', updateColumnCount);
+  }, [updateColumnCount]);
 
-  const handleDelete = async (id) => {
-    try {
-      const response = await authFetch(`/admin-api/image?id=${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        message.success('图片删除成功');
-        fetchImages(currentPage, pageSize, searchText);
-      } else {
-        message.error('删除图片失败');
-      }
-    } catch (error) {
-      console.error('删除图片失败:', error);
-      message.error('删除图片失败');
+
+
+  useEffect(() => {
+    fetchImages(1, pageSize, false);
+  }, []);
+
+  // 滚动监听
+  const handleScroll = useCallback(() => {
+    if (!containerRef.current || loading || loadingMore || !hasMore) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+    if (scrollTop + clientHeight >= scrollHeight - 100) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchImages(nextPage, pageSize, true);
     }
-  };
+  }, [loading, loadingMore, hasMore, currentPage, pageSize]);
 
-  const handleView = (record) => {
-    const imageUrl = record.url;
-    window.open(imageUrl, '_blank');
-  };
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
 
-  const handleDownload = (record) => {
-    const imageUrl = record.url;
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = record.file_name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    message.success('开始下载图片');
-  };
-
+  // 格式化文件大小
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -84,157 +106,134 @@ const ImageList = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // 格式化时间
   const formatTime = (timestamp) => {
     return new Date(timestamp * 1000).toLocaleString('zh-CN');
   };
 
-  const handleCopyUrl = async (url) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      message.success('URL已复制到剪贴板');
-    } catch (err) {
-      message.error('复制失败');
-    }
+  // 查看图片
+  const handleViewImage = (image) => {
+    setPreviewImage(image.url);
+    setPreviewVisible(true);
   };
 
-  const columns = [
-    {
-      title: '预览',
-      dataIndex: 'url',
-      key: 'preview',
-      width: 100,
-      render: (url, record) => (
-        <Image
-          width={60}
-          height={40}
-          src={record.url}
-          alt={record.file_name}
-          style={{ objectFit: 'cover', borderRadius: '4px' }}
-        />
-      )
-    },
-    {
-      title: '文件信息',
-      key: 'fileInfo',
-      render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 500, marginBottom: '4px' }}>
-            {record.file_name}
-          </div>
-          <div 
-            style={{ 
-              color: '#666', 
-              fontSize: '12px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-            onClick={() => handleCopyUrl(record.url)}
-            title="点击复制URL"
-          >
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {record.url}
-            </span>
-            {/* <CopyOutlined style={{ color: '#1890ff', fontSize: '12px' }} /> */}
-          </div>
+  // 渲染瀑布流
+  const renderWaterfall = () => {
+    if (loading && images.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
         </div>
-      )
-    },
-    {
-      title: '文件大小',
-      dataIndex: 'file_size',
-      key: 'file_size',
-      width: 100,
-      render: (size) => formatFileSize(size)
-    },
-    {
-      title: '上传时间',
-      dataIndex: 'create_time',
-      key: 'create_time',
-      width: 150,
-      render: (timestamp) => formatTime(timestamp)
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      width: 150,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-            title="查看"
-          />
-          <Button
-            type="text"
-            icon={<DownloadOutlined />}
-            onClick={() => handleDownload(record)}
-            title="下载"
-          />
-          <Popconfirm
-            title="确定要删除这张图片吗？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              title="删除"
-            />
-          </Popconfirm>
-        </Space>
-      )
+      );
     }
-  ];
 
-  const handleSearch = (value) => {
-    setSearchText(value);
-    setCurrentPage(1); // 搜索时重置到第一页
+    if (!images || images.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Empty description="暂无图片" />
+        </div>
+      );
+    }
+
+    const columns = Array.from({ length: columnCount }, () => []);
+    const heights = new Array(columnCount).fill(0);
+
+    images.forEach((image) => {
+      const shortestIndex = heights.indexOf(Math.min(...heights));
+      columns[shortestIndex].push(image);
+      // 估算图片高度
+      heights[shortestIndex] += 300;
+    });
+
+    return (
+      <div style={{ display: 'flex', gap: '16px' }}>
+        {columns.map((column, columnIndex) => (
+          <div key={columnIndex} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {column.map((image) => (
+              <Card
+                key={image.id}
+                hoverable
+                style={{ borderRadius: '8px', overflow: 'hidden' }}
+                bodyStyle={{ padding: 0 }}
+                onClick={() => handleViewImage(image)}
+              >
+                <div style={{ position: 'relative' }}>
+                  <Image
+                    src={image.url}
+                    alt={image.file_name}
+                    style={{ width: '100%', display: 'block' }}
+                    preview={false}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                      color: 'white',
+                      padding: '20px 12px 12px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <div style={{ fontWeight: 500, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {image.file_name}
+                    </div>
+                    <div style={{ opacity: 0.8 }}>
+                      {formatFileSize(image.file_size)} • {formatTime(image.create_time)}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
   };
+
+
 
   return (
-    <Card title="图片列表" style={{ height: '100%', borderRadius: 0, border: 'none' }}>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Search
-          placeholder="搜索图片名称"
-          allowClear
-          style={{ width: 300 }}
-          onSearch={handleSearch}
-          onChange={(e) => {
-            if (e.target.value === '') {
-              setSearchText('');
-              setCurrentPage(1);
-            }
-          }}
-        />
-        <Button type="primary" onClick={() => window.location.href = '/admin/images/upload'}>
-          上传图片
-        </Button>
-      </div>
+    <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+      {/* 瀑布流容器 */}
+      <div 
+        ref={containerRef} 
+        style={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          padding: '16px',
+          background: '#f5f5f5'
+        }}
+      >
+        {renderWaterfall()}
         
-        <Table
-          columns={columns}
-          dataSource={images}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            }
-          }}
-        />
-    </Card>
+        {/* 加载更多提示 */}
+        {loadingMore && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: '8px', color: '#666' }}>加载更多图片...</div>
+          </div>
+        )}
+        
+        {!hasMore && images.length > 0 && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+            已加载全部图片
+          </div>
+        )}
+      </div>
+
+      {/* 图片预览 */}
+      <Image
+        style={{ display: 'none' }}
+        src={previewImage}
+        preview={{
+          visible: previewVisible,
+          onVisibleChange: setPreviewVisible
+        }}
+      />
+    </div>
   );
 };
 

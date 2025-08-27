@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -114,47 +115,98 @@ func DeleteImageHandler(c *fiber.Ctx) error {
 }
 
 func CreateImageHandler(c *fiber.Ctx) error {
+	// Check if file exists in request
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		return err
+		logrus.Errorf("Failed to get file from form: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "No file provided or invalid file field",
+		})
+	}
+
+	// Validate file size (max 50MB)
+	if fileHeader.Size > 50*1024*1024 {
+		logrus.Errorf("File too large: %d bytes", fileHeader.Size)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "File size exceeds 50MB limit",
+		})
+	}
+
+	// Validate file type
+	contentType := fileHeader.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		logrus.Errorf("Invalid file type: %s", contentType)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Only image files are allowed",
+		})
 	}
 
 	var folderID int64
-	folderID, err = parseFolderID(c.FormValue("folder_id"))
+	folderIDStr := c.FormValue("folder_id")
+	logrus.Debugf("Received folder_id: %s", folderIDStr)
+	folderID, err = parseFolderID(folderIDStr)
 	if err != nil {
-		logrus.Errorln("parse folder id failed: ", err)
+		logrus.Errorf("Parse folder id failed: %v, input: %s", err, folderIDStr)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid folder_id format",
+		})
 	}
 	if folderID != 0 {
 		folder, e := service.ImageFolderService.Get(folderID)
 		if e != nil {
-			return e
+			logrus.Errorf("Get folder failed: %v", e)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to validate folder",
+			})
 		}
 		if folder == nil {
-			return errors.New("folder not found")
+			logrus.Errorf("Folder not found: %d", folderID)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Folder not found",
+			})
 		}
 	}
 
+	// Calculate file hash
 	imageHash, err := utils.MultipartFileHeaderHash(fileHeader)
 	if err != nil {
-		return err
+		logrus.Errorf("Failed to calculate file hash: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to process file",
+		})
 	}
 	extName := filepath.Ext(fileHeader.Filename)
-	// 写磁盘缓存
+	logrus.Debugf("Processing file: %s, hash: %s, ext: %s", fileHeader.Filename, imageHash, extName)
+	
+	// Save to disk cache
 	cachePath := utils.GetImageCachePath(imageHash, extName)
 	err = os.MkdirAll(filepath.Dir(cachePath), 0755)
 	if err != nil {
-		return err
+		logrus.Errorf("Failed to create cache directory: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create cache directory",
+		})
 	}
 	err = c.SaveFile(fileHeader, cachePath)
 	if err != nil {
-		return err
+		logrus.Errorf("Failed to save file to cache: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to save file",
+		})
 	}
-	// 上传到S3
+	
+	// Upload to S3
+	logrus.Debugf("Uploading to S3: %s -> %s", cachePath, imageHash+extName)
 	err = service.StorageService.Upload(cachePath, imageHash+extName)
 	if err != nil {
-		return err
+		logrus.Errorf("Failed to upload to S3: %v", err)
+		// Clean up cache file on S3 upload failure
+		os.Remove(cachePath)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to upload to storage",
+		})
 	}
-	// 写入DB
+	// Save to database
 	now := time.Now().Unix()
 	imgObj := &common.Image{
 		Hash:        imageHash,
@@ -168,16 +220,26 @@ func CreateImageHandler(c *fiber.Ctx) error {
 	}
 	imgID, err := service.ImageService.Add(imgObj)
 	if err != nil {
-		return err
+		logrus.Errorf("Failed to save image to database: %v", err)
+		// Clean up S3 and cache on database failure
+		service.StorageService.Delete(imageHash + extName)
+		os.Remove(cachePath)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to save image record",
+		})
 	}
-	logrus.Debugf("image_id: %d\n", imgID)
+	logrus.Debugf("Image saved successfully: id=%d, hash=%s", imgID, imageHash)
 
-	// 生成链接
+	// Generate image URL
 	imageURL, err := utils.GetImageURL(c, imgObj)
 	if err != nil {
-		return err
+		logrus.Errorf("Failed to generate image URL: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate image URL",
+		})
 	}
 	imgObj.URL = imageURL
+	logrus.Debugf("Upload completed successfully: %s", imageURL)
 	return c.JSON(imgObj)
 }
 

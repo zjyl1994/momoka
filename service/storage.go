@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/vars"
 )
 
@@ -27,12 +29,15 @@ func (s *storageService) Upload(diskPath, remotePath string) error {
 	// 构建完整的远程路径
 	fullRemotePath := filepath.Join(vars.S3Config.Prefix, remotePath)
 
-	// 上传文件到S3
-	_, err = vars.S3Client.PutObject(context.TODO(), &s3.PutObjectInput{
+	// 使用uploader进行上传，自动处理分片上传
+	uploader := manager.NewUploader(vars.S3Client)
+	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(vars.S3Config.Bucket),
 		Key:    aws.String(fullRemotePath),
 		Body:   file,
 	})
+
+	logrus.Debugln("Upload S3", output, err)
 
 	return err
 }
