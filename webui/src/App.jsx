@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ImageList from './pages/ImageList';
 import ImageUpload from './pages/ImageUpload';
+import FileManager from './pages/FileManager';
 import './App.css';
 
 function App() {
@@ -35,13 +36,8 @@ function App() {
                 <Route path="upload" element={<ImageUpload />} />
               </Route>
               
-              {/* 其他管理页面的占位符 */}
-              <Route path="folders" element={
-                <div style={{ padding: '24px', textAlign: 'center' }}>
-                  <h2>文件夹管理</h2>
-                  <p>功能开发中...</p>
-                </div>
-              } />
+              {/* 文件夹管理 */}
+              <Route path="folders" element={<FileManager />} />
               
               <Route path="users" element={
                 <div style={{ padding: '24px', textAlign: 'center' }}>

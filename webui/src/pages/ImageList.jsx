@@ -136,7 +136,7 @@ const ImageList = () => {
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {record.url}
             </span>
-            <CopyOutlined style={{ color: '#1890ff', fontSize: '12px' }} />
+            {/* <CopyOutlined style={{ color: '#1890ff', fontSize: '12px' }} /> */}
           </div>
         </div>
       )
