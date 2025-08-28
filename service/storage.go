@@ -30,7 +30,9 @@ func (s *storageService) Upload(ctx context.Context, diskPath, remotePath, conte
 	fullRemotePath := filepath.Join(vars.S3Config.Prefix, remotePath)
 
 	// 使用uploader进行上传，自动处理分片上传
-	uploader := manager.NewUploader(vars.S3Client)
+	uploader := manager.NewUploader(vars.S3Client, func(u *manager.Uploader) {
+		u.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
+	})
 	output, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(vars.S3Config.Bucket),
 		ContentType: aws.String(contentType),

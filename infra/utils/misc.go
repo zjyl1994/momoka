@@ -76,7 +76,8 @@ func InitS3Client(ctx context.Context, conf vars.S3Conf) (*s3.Client, error) {
 	if conf.Endpoint != "" {
 		s3Opts = append(s3Opts, func(o *s3.Options) {
 			o.BaseEndpoint = aws.String(conf.Endpoint)
-			o.UsePathStyle = true // 对于自定义端点通常使用路径样式
+			o.UsePathStyle = true                                                     // 对于自定义端点通常使用路径样式
+			o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired // 停用checksum防止其他S3兼容实现失败
 		})
 	}
 
