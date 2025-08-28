@@ -31,6 +31,8 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [contextMenuRecord, setContextMenuRecord] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
 
   // Fetch folder contents (both folders and images)
   const fetchFolderContents = async (folderIdParam = folderId) => {
@@ -178,40 +180,42 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
 
   // Delete item (folder or image)
   const handleDeleteItem = (item) => {
-    const itemTypeName = item.type === 'folder' ? '文件夹' : '图片';
-    const deleteContent = item.type === 'folder' 
-      ? `确定要删除文件夹 "${item.name}" 吗？此操作将同时删除文件夹内的所有内容。`
-      : `确定要删除图片 "${item.name}" 吗？`;
-    Modal.confirm({
-      title: '确认删除',
-      content: deleteContent,
-      okText: '确定',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          const endpoint = item.type === 'folder' ? '/admin-api/folder' : '/admin-api/image';
-          const response = await authFetch(`${endpoint}?id=${item.id}`, {
-            method: 'DELETE'
-          });
-          if (response.ok) {
-            message.success(`${itemTypeName}删除成功`);
-            fetchFolderContents();
-            if (item.type === 'folder') {
-              onFolderUpdate && onFolderUpdate();
-            } else {
-              onImageUpdate && onImageUpdate();
-            }
-          } else {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMsg = errorData.error || `删除${itemTypeName}失败`;
-            message.error(errorMsg);
-          }
-        } catch (error) {
-          console.error(`删除${itemTypeName}失败:`, error);
-          message.error(`删除${itemTypeName}失败: ${error.message}`);
+    console.log("delete item", item);
+    console.log("About to show delete modal");
+    setDeleteItem(item);
+    setDeleteModalVisible(true);
+  };
+
+  // Confirm delete item
+  const confirmDeleteItem = async () => {
+    if (!deleteItem) return;
+    
+    const itemTypeName = deleteItem.type === 'folder' ? '文件夹' : '图片';
+    try {
+      const endpoint = deleteItem.type === 'folder' ? '/admin-api/folder' : '/admin-api/image';
+      const response = await authFetch(`${endpoint}?id=${deleteItem.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        message.success(`${itemTypeName}删除成功`);
+        fetchFolderContents();
+        if (deleteItem.type === 'folder') {
+          onFolderUpdate && onFolderUpdate();
+        } else {
+          onImageUpdate && onImageUpdate();
         }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.error || `删除${itemTypeName}失败`;
+        message.error(errorMsg);
       }
-    });
+    } catch (error) {
+      console.error(`删除${itemTypeName}失败:`, error);
+      message.error(`删除${itemTypeName}失败: ${error.message}`);
+    } finally {
+      setDeleteModalVisible(false);
+      setDeleteItem(null);
+    }
   };
 
   // Confirm rename
@@ -509,8 +513,11 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
     );
   }
 
+
+
   return (
     <div style={{ height: '100%', overflow: 'hidden' }}>
+
       <Table
         columns={columns}
         dataSource={items}
@@ -690,6 +697,30 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
             }}
           />
         </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="确认删除"
+        open={deleteModalVisible}
+        onOk={confirmDeleteItem}
+        onCancel={() => {
+          setDeleteModalVisible(false);
+          setDeleteItem(null);
+        }}
+        okText="确定"
+        cancelText="取消"
+        okType="danger"
+        centered
+      >
+        {deleteItem && (
+          <p>
+            {deleteItem.type === 'folder' 
+              ? `确定要删除文件夹 "${deleteItem.name}" 吗？此操作将同时删除文件夹内的所有内容。`
+              : `确定要删除图片 "${deleteItem.name}" 吗？`
+            }
+          </p>
+        )}
       </Modal>
     </div>
   );
