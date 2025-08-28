@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Spin, Checkbox, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,11 @@ const Login = () => {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Set page title
+  useEffect(() => {
+    document.title = '登录 - Momoka 图床';
+  }, []);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -35,7 +40,7 @@ const Login = () => {
         <div className="login-form-wrapper">
           <Card className="login-card">
             <div className="login-header">
-              <h1>Momoka 管理系统</h1>
+              <h1>Momoka 图床</h1>
               <p>请登录您的账户</p>
             </div>
             

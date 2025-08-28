@@ -14,6 +14,11 @@ const ImageUpload = () => {
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [uploadResults, setUploadResults] = useState([]);
 
+  // Set page title
+  useEffect(() => {
+    document.title = '图片上传 - Momoka 图床';
+  }, []);
+
   // 获取文件夹树
   const fetchFolderTree = async () => {
     setLoadingFolders(true);

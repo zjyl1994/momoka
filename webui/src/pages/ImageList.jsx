@@ -6,6 +6,11 @@ const ImageList = () => {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // Set page title
+  useEffect(() => {
+    document.title = '图片列表 - Momoka 图床';
+  }, []);
+
   const [images, setImages] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);

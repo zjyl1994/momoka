@@ -37,11 +37,6 @@ const Sidebar = ({ collapsed }) => {
       label: '文件管理'
     },
     {
-      key: '/admin/analytics',
-      icon: <BarChartOutlined />,
-      label: '数据统计'
-    },
-    {
       key: '/admin/settings',
       icon: <SettingOutlined />,
       label: '系统设置'
@@ -114,7 +109,7 @@ const Sidebar = ({ collapsed }) => {
             fontSize: '18px',
             fontWeight: 600
           }}>
-            Momoka
+            Momoka 图床
           </h2>
         )}
         {collapsed && (

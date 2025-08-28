@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, Row, Col, Statistic, Progress, Table, Tag } from 'antd';
 import {
   UserOutlined,
@@ -10,6 +10,11 @@ import {
 } from '@ant-design/icons';
 
 const Dashboard = () => {
+  // Set page title
+  useEffect(() => {
+    document.title = '仪表板 - Momoka 图床';
+  }, []);
+
   // 模拟数据
   const stats = [
     {

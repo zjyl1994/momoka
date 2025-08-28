@@ -24,6 +24,11 @@ const FileManager = () => {
 
   const [dragOver, setDragOver] = useState(false);
 
+  // Set page title
+  useEffect(() => {
+    document.title = '文件管理 - Momoka 图床';
+  }, []);
+
   // 获取文件夹树
   const fetchFolderTree = async () => {
     try {
