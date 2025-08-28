@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Image, Dropdown, Modal, Input, message, Button, Select, Spin, Empty, Space, Typography, Tree } from 'antd';
+import { Table, Image, Dropdown, Modal, Input, message, Button, Select, Spin, Empty, Space, Typography, Tree, Checkbox } from 'antd';
 import {
   EyeOutlined,
   DownloadOutlined,
@@ -15,9 +15,11 @@ import { authFetch } from '../utils/api';
 const { Option } = Select;
 const { Text } = Typography;
 
-const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onFolderSelect }) => {
+const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onFolderSelect, onSelectionChange, onItemsChange }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [moveModalVisible, setMoveModalVisible] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -70,6 +72,10 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
         });
         
         setItems(allItems);
+        // 通知父组件当前的items数据
+        if (onItemsChange) {
+          onItemsChange(allItems);
+        }
       } else {
         message.error('获取文件列表失败');
       }
@@ -84,8 +90,47 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
   useEffect(() => {
     if (folderId !== undefined) {
       fetchFolderContents(folderId);
+      // Clear selection when folder changes
+      setSelectedRowKeys([]);
+      setSelectedItems([]);
     }
   }, [folderId]);
+
+  // Handle selection change
+  const handleSelectionChange = (selectedKeys, selectedRows) => {
+    setSelectedRowKeys(selectedKeys);
+    setSelectedItems(selectedRows);
+    // Notify parent component
+    if (onSelectionChange) {
+      onSelectionChange(selectedKeys, selectedRows);
+    }
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedRowKeys([]);
+    setSelectedItems([]);
+    if (onSelectionChange) {
+      onSelectionChange([], []);
+    }
+  };
+
+  // Expose clearSelection method and selectAll method to parent
+  useEffect(() => {
+    if (onSelectionChange) {
+      onSelectionChange(selectedRowKeys, selectedItems, clearSelection, selectAll);
+    }
+  }, [selectedRowKeys, selectedItems]);
+
+  // Select all items
+  const selectAll = () => {
+    const allKeys = items.map(item => item.key);
+    setSelectedRowKeys(allKeys);
+    setSelectedItems(items);
+    if (onSelectionChange) {
+      onSelectionChange(allKeys, items);
+    }
+  };
 
   // Handle global click to hide context menu
   useEffect(() => {
@@ -530,6 +575,13 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
               style={{ padding: '50px' }}
             />
           ),
+        }}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: handleSelectionChange,
+          getCheckboxProps: (record) => ({
+            name: record.name,
+          }),
         }}
         onRow={(record) => ({
           onDoubleClick: () => handleDoubleClick(record),
