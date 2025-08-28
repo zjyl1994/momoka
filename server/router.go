@@ -6,6 +6,7 @@ import (
 
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/golang-jwt/jwt/v5"
@@ -68,7 +69,9 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/setting", adminapi.ListSettingHandler)
 	adminAPI.Patch("/setting", adminapi.UpdateSettingHandler)
 
-	app.Use("/", filesystem.New(filesystem.Config{
+	app.Use("/", compress.New(compress.Config{
+		Level: compress.LevelDefault,
+	}), filesystem.New(filesystem.Config{
 		Root:         http.FS(webui.WebUI),
 		PathPrefix:   "dist",
 		NotFoundFile: "dist/index.html",
