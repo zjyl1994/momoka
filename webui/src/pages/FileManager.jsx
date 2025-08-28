@@ -37,39 +37,34 @@ const FileManager = () => {
     }
   };
 
-  // 获取文件夹路径
-  const fetchFolderPath = async (folderId) => {
+  // 构建文件夹路径（优化版本，直接使用folderTree数据）
+  const buildFolderPath = (folderId) => {
     if (folderId === 0) {
       setFolderPath([{ id: 0, name: '根目录' }]);
       return;
     }
 
-    try {
-      const response = await authFetch(`/admin-api/folder?id=${folderId}&meta_only=true`);
-      if (response.ok) {
-        const data = await response.json();
-        const folder = data.meta;
-        if (folder) {
-          // 递归构建路径
-          const buildPath = (currentFolder, tree) => {
-            const path = [{ id: currentFolder.id, name: currentFolder.name }];
-            if (currentFolder.parent_id !== 0) {
-              const parent = findFolderInTree(currentFolder.parent_id, tree);
-              if (parent) {
-                path.unshift(...buildPath(parent, tree));
-              }
-            } else {
-              path.unshift({ id: 0, name: '根目录' });
-            }
-            return path;
-          };
-
-          const path = buildPath(folder, folderTree);
-          setFolderPath(path);
+    const folder = findFolderInTree(folderId, folderTree);
+    if (folder) {
+      // 递归构建路径
+      const buildPath = (currentFolder, tree) => {
+        const path = [{ id: currentFolder.id, name: currentFolder.name }];
+        if (currentFolder.parent_id !== 0) {
+          const parent = findFolderInTree(currentFolder.parent_id, tree);
+          if (parent) {
+            path.unshift(...buildPath(parent, tree));
+          }
+        } else {
+          path.unshift({ id: 0, name: '根目录' });
         }
-      }
-    } catch (error) {
-      console.error('获取文件夹路径失败:', error);
+        return path;
+      };
+
+      const path = buildPath(folder, folderTree);
+      setFolderPath(path);
+    } else {
+      // 如果在树中找不到文件夹，设置为根目录
+      setFolderPath([{ id: 0, name: '根目录' }]);
     }
   };
 
@@ -93,7 +88,7 @@ const FileManager = () => {
 
   useEffect(() => {
     if (folderTree.length > 0) {
-      fetchFolderPath(selectedFolderId);
+      buildFolderPath(selectedFolderId);
     }
   }, [selectedFolderId, folderTree]);
 
