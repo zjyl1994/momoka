@@ -18,7 +18,7 @@ var StorageService = &storageService{}
 type storageService struct{}
 
 // Upload 上传文件到S3
-func (s *storageService) Upload(diskPath, remotePath string) error {
+func (s *storageService) Upload(ctx context.Context, diskPath, remotePath, contentType string) error {
 	// 打开本地文件
 	file, err := os.Open(diskPath)
 	if err != nil {
@@ -31,10 +31,11 @@ func (s *storageService) Upload(diskPath, remotePath string) error {
 
 	// 使用uploader进行上传，自动处理分片上传
 	uploader := manager.NewUploader(vars.S3Client)
-	output, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(vars.S3Config.Bucket),
-		Key:    aws.String(fullRemotePath),
-		Body:   file,
+	output, err := uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(vars.S3Config.Bucket),
+		ContentType: aws.String(contentType),
+		Key:         aws.String(fullRemotePath),
+		Body:        file,
 	})
 
 	logrus.Debugln("Upload S3", output, err)
@@ -43,12 +44,12 @@ func (s *storageService) Upload(diskPath, remotePath string) error {
 }
 
 // Download 从S3下载文件
-func (s *storageService) Download(remotePath, diskPath string) error {
+func (s *storageService) Download(ctx context.Context, remotePath, diskPath string) error {
 	// 构建完整的远程路径
 	fullRemotePath := filepath.Join(vars.S3Config.Prefix, remotePath)
 
 	// 从S3获取对象
-	resp, err := vars.S3Client.GetObject(context.TODO(), &s3.GetObjectInput{
+	resp, err := vars.S3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(vars.S3Config.Bucket),
 		Key:    aws.String(fullRemotePath),
 	})
@@ -75,11 +76,11 @@ func (s *storageService) Download(remotePath, diskPath string) error {
 	return err
 }
 
-func (s *storageService) Delete(remotePath string) error {
+func (s *storageService) Delete(ctx context.Context, remotePath string) error {
 	// 构建完整的远程路径
 	fullRemotePath := filepath.Join(vars.S3Config.Prefix, remotePath)
 	// 删除S3对象
-	_, err := vars.S3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+	_, err := vars.S3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(vars.S3Config.Bucket),
 		Key:    aws.String(fullRemotePath),
 	})

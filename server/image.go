@@ -17,8 +17,8 @@ import (
 var getImageSf utils.SingleFlight[string]
 var webpSf utils.SingleFlight[string]
 
-
 func GetImageHandler(c *fiber.Ctx) error {
+	ctx := c.Context()
 	fileName := c.Params("filename")
 
 	localPath, err := getImageSf.Do(fileName, func() (string, error) {
@@ -46,7 +46,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 		cachePath := utils.GetImageCachePath(imgObj.Hash, extName)
 		if !utils.FileExists(cachePath) {
 			// 从S3下载
-			err = service.StorageService.Download(imgObj.Hash+extName, cachePath)
+			err = service.StorageService.Download(ctx, imgObj.Hash+extName, cachePath)
 			if err != nil {
 				return "", err
 			}

@@ -115,6 +115,7 @@ func DeleteImageHandler(c *fiber.Ctx) error {
 }
 
 func CreateImageHandler(c *fiber.Ctx) error {
+	ctx := c.Context()
 	// Check if file exists in request
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
@@ -125,7 +126,7 @@ func CreateImageHandler(c *fiber.Ctx) error {
 	}
 
 	// Validate file size (max 50MB)
-	if fileHeader.Size > 50*1024*1024 {
+	if fileHeader.Size > common.MAX_IMAGE_SIZE {
 		logrus.Errorf("File too large: %d bytes", fileHeader.Size)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "File size exceeds 50MB limit",
@@ -177,7 +178,7 @@ func CreateImageHandler(c *fiber.Ctx) error {
 	}
 	extName := filepath.Ext(fileHeader.Filename)
 	logrus.Debugf("Processing file: %s, hash: %s, ext: %s", fileHeader.Filename, imageHash, extName)
-	
+
 	// Save to disk cache
 	cachePath := utils.GetImageCachePath(imageHash, extName)
 	err = os.MkdirAll(filepath.Dir(cachePath), 0755)
@@ -194,10 +195,10 @@ func CreateImageHandler(c *fiber.Ctx) error {
 			"error": "Failed to save file",
 		})
 	}
-	
+
 	// Upload to S3
 	logrus.Debugf("Uploading to S3: %s -> %s", cachePath, imageHash+extName)
-	err = service.StorageService.Upload(cachePath, imageHash+extName)
+	err = service.StorageService.Upload(ctx, cachePath, imageHash+extName, contentType)
 	if err != nil {
 		logrus.Errorf("Failed to upload to S3: %v", err)
 		// Clean up cache file on S3 upload failure
@@ -222,7 +223,7 @@ func CreateImageHandler(c *fiber.Ctx) error {
 	if err != nil {
 		logrus.Errorf("Failed to save image to database: %v", err)
 		// Clean up S3 and cache on database failure
-		service.StorageService.Delete(imageHash + extName)
+		service.StorageService.Delete(ctx, imageHash+extName)
 		os.Remove(cachePath)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to save image record",

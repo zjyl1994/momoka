@@ -14,3 +14,7 @@ const (
 	DEFAULT_ADMIN_USER     = "admin"
 	DEFAULT_ADMIN_PASSWORD = "123456"
 )
+
+const (
+	MAX_IMAGE_SIZE = 50 * 1024 * 1024
+)

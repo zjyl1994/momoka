@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"os"
 
@@ -66,7 +67,7 @@ func (s *imageService) DeleteByID(id int64) error {
 
 func (s *imageService) Delete(img *common.Image) (err error) {
 	// 删除S3对象
-	err = StorageService.Delete(img.Hash + img.ExtName)
+	err = StorageService.Delete(context.Background(), img.Hash+img.ExtName)
 	if err != nil {
 		return err
 	}
@@ -137,7 +138,7 @@ func (s *imageService) GetAll(keyword string, page, pageSize int) ([]common.Imag
 	if keyword != "" {
 		query = query.Where("file_name LIKE ?", "%"+keyword+"%")
 	}
-	
+
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err

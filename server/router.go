@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
+	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/server/adminapi"
 	"github.com/zjyl1994/momoka/server/api"
@@ -19,7 +20,7 @@ import (
 func Run(listenAddr string) error {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
-		BodyLimit:             10 * 1024 * 1024,
+		BodyLimit:             common.MAX_IMAGE_SIZE,
 	})
 
 	app.Get("/i/:filename", GetImageHandler)
