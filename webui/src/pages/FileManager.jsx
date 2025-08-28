@@ -249,7 +249,7 @@ const FileManager = () => {
               <Button
                 type="primary"
                 icon={<CloudUploadOutlined />}
-                onClick={() => navigate('/admin/images/upload')}
+                onClick={() => navigate('/admin/images-upload')}
               >
                 批量上传
               </Button>
