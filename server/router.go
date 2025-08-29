@@ -70,6 +70,8 @@ func Run(listenAddr string) error {
 	adminAPI.Patch("/setting", adminapi.UpdateSettingHandler)
 	adminAPI.Get("/readonly-setting", adminapi.GetReadonlySettingHandler)
 	adminAPI.Get("/dashboard", adminapi.DashboardDataHandler)
+	adminAPI.Get("/backup/meta", adminapi.GenerateBackupHandler)
+	adminAPI.Post("/backup/meta", adminapi.RestoreBackupHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,

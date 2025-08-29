@@ -10,7 +10,7 @@ type Image struct {
 	FolderID    int64  `gorm:"default:0" json:"folder_id"`
 	CreateTime  int64  `gorm:"autoCreateTime" json:"create_time"`
 	UpdateTime  int64  `gorm:"autoUpdateTime" json:"update_time"`
-	URL         string `gorm:"-:all" json:"url"`
+	URL         string `gorm:"-:all" json:"url,omitempty"`
 }
 
 type ImageReq struct {
