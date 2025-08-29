@@ -143,3 +143,25 @@ func GetImageURL(c *fiber.Ctx, img *common.Image) (string, error) {
 	}
 	return c.BaseURL() + "/i/" + imageHashId + img.ExtName, nil
 }
+
+func GetFolderForDashboard(path string) (int64, int64, error) {
+	var fileCount, totalSize int64
+
+	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// 只统计文件，不统计目录
+		if !info.IsDir() {
+			fileCount++
+			totalSize += info.Size()
+		}
+		return nil
+	})
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return fileCount, totalSize, nil
+}

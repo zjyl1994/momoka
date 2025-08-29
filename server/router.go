@@ -68,6 +68,7 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/image/all", adminapi.GetAllImageHandler)
 	adminAPI.Get("/setting", adminapi.ListSettingHandler)
 	adminAPI.Patch("/setting", adminapi.UpdateSettingHandler)
+	adminAPI.Get("/dashboard", adminapi.DashboardDataHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,

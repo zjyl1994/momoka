@@ -150,3 +150,15 @@ func (s *imageService) GetAll(keyword string, page, pageSize int) ([]common.Imag
 	}
 	return images, total, nil
 }
+
+func (s *imageService) GetCountForDashboard() (int64, int64, error) {
+	var count int64
+	if err := vars.Database.Model(&common.Image{}).Count(&count).Error; err != nil {
+		return 0, 0, err
+	}
+	var size int64
+	if err := vars.Database.Model(&common.Image{}).Select("sum(file_size)").Scan(&size).Error; err != nil {
+		return 0, 0, err
+	}
+	return count, size, nil
+}

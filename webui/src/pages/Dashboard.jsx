@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Card, Row, Col, Statistic, Progress, Table, Tag } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Card, Row, Col, Statistic, Progress, Table, Tag, message } from 'antd';
 import {
   UserOutlined,
   FileImageOutlined,
@@ -8,41 +8,80 @@ import {
   EyeOutlined,
   DownloadOutlined
 } from '@ant-design/icons';
+import { authFetch } from '../utils/api';
 
 const Dashboard = () => {
+  const [dashboardData, setDashboardData] = useState({
+    image_count: 0,
+    image_size: 0,
+    cache_count: 0,
+    cache_size: 0
+  });
+  const [loading, setLoading] = useState(true);
+
   // Set page title
   useEffect(() => {
     document.title = '仪表板 - Momoka 图床';
   }, []);
 
-  // 模拟数据
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const response = await authFetch('/admin-api/dashboard');
+        if (!response.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+        const data = await response.json();
+        setDashboardData(data.count);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        message.error('获取仪表板数据失败');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Format bytes to human readable format
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const stats = [
     {
-      title: '总用户数',
-      value: 1234,
-      icon: <UserOutlined style={{ color: '#1890ff' }} />,
+      title: '图片总数',
+      value: dashboardData.image_count,
+      icon: <FileImageOutlined style={{ color: '#1890ff' }} />,
       color: '#1890ff'
     },
     {
-      title: '图片总数',
-      value: 5678,
-      icon: <FileImageOutlined style={{ color: '#52c41a' }} />,
+      title: '图片容量',
+      value: formatBytes(dashboardData.image_size),
+      icon: <CloudUploadOutlined style={{ color: '#52c41a' }} />,
       color: '#52c41a'
     },
     {
-      title: '文件夹数',
-      value: 89,
-      icon: <FolderOutlined style={{ color: '#faad14' }} />,
-      color: '#faad14'
+      title: '缓存图片数',
+      value: dashboardData.cache_count,
+      icon: <FileImageOutlined style={{ color: '#722ed1' }} />,
+      color: '#722ed1'
     },
     {
-      title: '今日上传',
-      value: 156,
-      icon: <CloudUploadOutlined style={{ color: '#f5222d' }} />,
-      color: '#f5222d'
+      title: '缓存容量',
+      value: formatBytes(dashboardData.cache_size),
+      icon: <CloudUploadOutlined style={{ color: '#eb2f96' }} />,
+      color: '#eb2f96'
     }
   ];
-
+  
   const recentUploads = [
     {
       key: '1',
@@ -130,7 +169,7 @@ const Dashboard = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         {stats.map((stat, index) => (
           <Col xs={24} sm={12} lg={6} key={index}>
-            <Card>
+            <Card loading={loading}>
               <Statistic
                 title={stat.title}
                 value={stat.value}
