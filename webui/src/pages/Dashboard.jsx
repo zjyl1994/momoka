@@ -186,33 +186,6 @@ const Dashboard = () => {
             </div>
           </Card>
         </Col>
-
-        {/* 内存使用情况 */}
-        <Col xs={24} lg={8}>
-          <Card title="内存使用情况" loading={loading} style={{ height: '300px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <Progress
-                type="circle"
-                percent={Math.round((statData.mem.used / statData.mem.total) * 100)}
-                format={(percent) => `${percent}%`}
-                strokeColor={{
-                  '0%': '#108ee9',
-                  '100%': '#87d068',
-                }}
-                size={120}
-              />
-              <div style={{ marginTop: '16px' }}>
-                <p style={{ margin: 0, color: '#666' }}>
-                  已使用 {formatBytes(statData.mem.used)} / {formatBytes(statData.mem.total)}
-                </p>
-                <p style={{ margin: 0, color: '#666', marginTop: '8px' }}>
-                  可用 {formatBytes(statData.mem.free)}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </Col>
-
         {/* 磁盘使用情况 */}
         <Col xs={24} lg={8}>
           <Card title="磁盘使用情况" loading={loading} style={{ height: '300px' }}>
@@ -247,6 +220,34 @@ const Dashboard = () => {
             </div>
           </Card>
         </Col>
+
+        {/* 内存使用情况 */}
+        <Col xs={24} lg={8}>
+          <Card title="内存使用情况" loading={loading} style={{ height: '300px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <Progress
+                type="circle"
+                percent={Math.round((statData.mem.used / statData.mem.total) * 100)}
+                format={(percent) => `${percent}%`}
+                strokeColor={{
+                  '0%': '#108ee9',
+                  '100%': '#87d068',
+                }}
+                size={120}
+              />
+              <div style={{ marginTop: '16px' }}>
+                <p style={{ margin: 0, color: '#666' }}>
+                  已使用 {formatBytes(statData.mem.used)} / {formatBytes(statData.mem.total)}
+                </p>
+                <p style={{ margin: 0, color: '#666', marginTop: '8px' }}>
+                  可用 {formatBytes(statData.mem.free)}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        
       </Row>
     </div>
   );

@@ -18,10 +18,6 @@ const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
 
   // 处理退出登录
   const handleLogout = () => {

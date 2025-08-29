@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import ImageList from './pages/ImageList';
 import ImageUpload from './pages/ImageUpload';
 import FileManager from './pages/FileManager';
+import Settings from './pages/Settings';
 import './App.css';
 
 function App() {
@@ -44,12 +45,7 @@ function App() {
                 </div>
               } />
 
-              <Route path="settings" element={
-                <div style={{ padding: '24px', textAlign: 'center' }}>
-                  <h2>系统设置</h2>
-                  <p>功能开发中...</p>
-                </div>
-              } />
+              <Route path="settings" element={<Settings />} />
             </Route>
 
             {/* 根路径重定向到管理后台 */}
