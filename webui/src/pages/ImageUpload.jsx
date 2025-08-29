@@ -63,7 +63,7 @@ const ImageUpload = () => {
   const uploadProps = {
     name: 'file',
     multiple: true,
-    fileList,
+    showUploadList: false, // Hide default upload list
     beforeUpload: (file) => {
       const isImage = file.type.startsWith('image/');
       if (!isImage) {

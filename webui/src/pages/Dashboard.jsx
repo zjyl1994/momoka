@@ -3,11 +3,7 @@ import { Card, Row, Col, Statistic, Progress, Table, Tag, message } from 'antd';
 import {
   FileImageOutlined,
   CloudUploadOutlined,
-  DesktopOutlined,
   DatabaseOutlined,
-  ClockCircleOutlined,
-  CalendarOutlined,
-  ThunderboltOutlined
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 
@@ -62,34 +58,6 @@ const Dashboard = () => {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  // Format uptime to human readable format
-  const formatUptime = (seconds) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (days > 0) {
-      return `${days}天 ${hours}小时 ${minutes}分钟`;
-    } else if (hours > 0) {
-      return `${hours}小时 ${minutes}分钟`;
-    } else {
-      return `${minutes}分钟`;
-    }
-  };
-
-  // Format timestamp to readable date
-  const formatBootTime = (timestamp) => {
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
   };
 
   const stats = [
