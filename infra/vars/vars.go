@@ -1,6 +1,8 @@
 package vars
 
 import (
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/speps/go-hashids"
 	"gorm.io/gorm"
@@ -18,6 +20,7 @@ var (
 	CwebpBin       string
 	AutoCleanDays  int
 	AutoCleanItems int
+	BootTime       time.Time
 )
 
 type S3Conf struct {

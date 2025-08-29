@@ -22,6 +22,7 @@ import (
 )
 
 func Startup() (err error) {
+	vars.BootTime = time.Now()
 	vars.DebugMode, _ = strconv.ParseBool(os.Getenv("MOMOKA_DEBUG"))
 	if vars.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)

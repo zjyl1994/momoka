@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Progress, Table, Tag, message } from 'antd';
 import {
-  UserOutlined,
   FileImageOutlined,
-  FolderOutlined,
   CloudUploadOutlined,
-  EyeOutlined,
-  DownloadOutlined
+  DesktopOutlined,
+  DatabaseOutlined,
+  ClockCircleOutlined,
+  CalendarOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 
@@ -16,6 +17,13 @@ const Dashboard = () => {
     image_size: 0,
     cache_count: 0,
     cache_size: 0
+  });
+  const [statData, setStatData] = useState({
+    load: { load1: 0, load5: 0, load15: 0 },
+    mem: { total: 0, used: 0, free: 0 },
+    disk: { total: 0, used: 0, free: 0, percent: 0 },
+    boot_time: 0,
+    uptime: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -35,6 +43,7 @@ const Dashboard = () => {
         }
         const data = await response.json();
         setDashboardData(data.count);
+        setStatData(data.stat);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         message.error('获取仪表板数据失败');
@@ -55,6 +64,34 @@ const Dashboard = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Format uptime to human readable format
+  const formatUptime = (seconds) => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) {
+      return `${days}天 ${hours}小时 ${minutes}分钟`;
+    } else if (hours > 0) {
+      return `${hours}小时 ${minutes}分钟`;
+    } else {
+      return `${minutes}分钟`;
+    }
+  };
+
+  // Format timestamp to readable date
+  const formatBootTime = (timestamp) => {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
   const stats = [
     {
       title: '图片总数',
@@ -63,104 +100,25 @@ const Dashboard = () => {
       color: '#1890ff'
     },
     {
-      title: '图片容量',
+      title: '图片总容量',
       value: formatBytes(dashboardData.image_size),
       icon: <CloudUploadOutlined style={{ color: '#52c41a' }} />,
       color: '#52c41a'
     },
     {
-      title: '缓存图片数',
+      title: '缓存文件数',
       value: dashboardData.cache_count,
       icon: <FileImageOutlined style={{ color: '#722ed1' }} />,
       color: '#722ed1'
     },
     {
-      title: '缓存容量',
+      title: '缓存占用空间',
       value: formatBytes(dashboardData.cache_size),
       icon: <CloudUploadOutlined style={{ color: '#eb2f96' }} />,
       color: '#eb2f96'
     }
   ];
-  
-  const recentUploads = [
-    {
-      key: '1',
-      filename: 'image1.jpg',
-      size: '2.5 MB',
-      uploadTime: '2024-01-15 10:30:00',
-      status: 'success',
-      views: 125
-    },
-    {
-      key: '2',
-      filename: 'photo.png',
-      size: '1.8 MB',
-      uploadTime: '2024-01-15 09:15:00',
-      status: 'success',
-      views: 89
-    },
-    {
-      key: '3',
-      filename: 'screenshot.jpg',
-      size: '3.2 MB',
-      uploadTime: '2024-01-15 08:45:00',
-      status: 'processing',
-      views: 0
-    },
-    {
-      key: '4',
-      filename: 'avatar.png',
-      size: '512 KB',
-      uploadTime: '2024-01-15 08:20:00',
-      status: 'success',
-      views: 234
-    }
-  ];
-
-  const columns = [
-    {
-      title: '文件名',
-      dataIndex: 'filename',
-      key: 'filename',
-      render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>
-    },
-    {
-      title: '大小',
-      dataIndex: 'size',
-      key: 'size'
-    },
-    {
-      title: '上传时间',
-      dataIndex: 'uploadTime',
-      key: 'uploadTime'
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const statusConfig = {
-          success: { color: 'green', text: '成功' },
-          processing: { color: 'blue', text: '处理中' },
-          error: { color: 'red', text: '失败' }
-        };
-        const config = statusConfig[status] || statusConfig.success;
-        return <Tag color={config.color}>{config.text}</Tag>;
-      }
-    },
-    {
-      title: '查看次数',
-      dataIndex: 'views',
-      key: 'views',
-      render: (views) => (
-        <span>
-          <EyeOutlined style={{ marginRight: 4 }} />
-          {views}
-        </span>
-      )
-    }
-  ];
-
+ 
   return (
     <div style={{ padding: '24px' }}>
       <h1 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: 600 }}>仪表板</h1>
@@ -181,14 +139,61 @@ const Dashboard = () => {
         ))}
       </Row>
 
+      {/* 系统状态 */}
       <Row gutter={[16, 16]}>
-        {/* 存储使用情况 */}
+        {/* 系统负载 */}
         <Col xs={24} lg={8}>
-          <Card title="存储使用情况" style={{ height: '300px' }}>
+          <Card title="系统负载" loading={loading} style={{ height: '300px' }}>
+            <div style={{ padding: '16px 0' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '13px', color: '#666' }}>1分钟负载</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600', color: '#1890ff' }}>{statData.load.load1.toFixed(2)}</span>
+                </div>
+                <Progress 
+                  percent={Math.min(statData.load.load1 * 25, 100)} 
+                  size="small" 
+                  strokeColor={statData.load.load1 > 2 ? '#ff4d4f' : statData.load.load1 > 1 ? '#faad14' : '#52c41a'}
+                  showInfo={false}
+                />
+              </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '13px', color: '#666' }}>5分钟负载</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600', color: '#52c41a' }}>{statData.load.load5.toFixed(2)}</span>
+                </div>
+                <Progress 
+                  percent={Math.min(statData.load.load5 * 25, 100)} 
+                  size="small" 
+                  strokeColor={statData.load.load5 > 2 ? '#ff4d4f' : statData.load.load5 > 1 ? '#faad14' : '#52c41a'}
+                  showInfo={false}
+                />
+              </div>
+              
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '13px', color: '#666' }}>15分钟负载</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600', color: '#faad14' }}>{statData.load.load15.toFixed(2)}</span>
+                </div>
+                <Progress 
+                  percent={Math.min(statData.load.load15 * 25, 100)} 
+                  size="small" 
+                  strokeColor={statData.load.load15 > 2 ? '#ff4d4f' : statData.load.load15 > 1 ? '#faad14' : '#52c41a'}
+                  showInfo={false}
+                />
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        {/* 内存使用情况 */}
+        <Col xs={24} lg={8}>
+          <Card title="内存使用情况" loading={loading} style={{ height: '300px' }}>
             <div style={{ textAlign: 'center' }}>
               <Progress
                 type="circle"
-                percent={68}
+                percent={Math.round((statData.mem.used / statData.mem.total) * 100)}
                 format={(percent) => `${percent}%`}
                 strokeColor={{
                   '0%': '#108ee9',
@@ -197,87 +202,52 @@ const Dashboard = () => {
                 size={120}
               />
               <div style={{ marginTop: '16px' }}>
-                <p style={{ margin: 0, color: '#666' }}>已使用 6.8 GB / 10 GB</p>
+                <p style={{ margin: 0, color: '#666' }}>
+                  已使用 {formatBytes(statData.mem.used)} / {formatBytes(statData.mem.total)}
+                </p>
+                <p style={{ margin: 0, color: '#666', marginTop: '8px' }}>
+                  可用 {formatBytes(statData.mem.free)}
+                </p>
               </div>
             </div>
           </Card>
         </Col>
 
-        {/* 今日统计 */}
+        {/* 磁盘使用情况 */}
         <Col xs={24} lg={8}>
-          <Card title="今日统计" style={{ height: '300px' }}>
-            <div style={{ padding: '16px 0' }}>
-              <Row gutter={[0, 16]}>
-                <Col span={24}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span><CloudUploadOutlined /> 上传次数</span>
-                    <span style={{ fontWeight: 600, color: '#1890ff' }}>156</span>
-                  </div>
-                </Col>
-                <Col span={24}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span><EyeOutlined /> 查看次数</span>
-                    <span style={{ fontWeight: 600, color: '#52c41a' }}>2,345</span>
-                  </div>
-                </Col>
-                <Col span={24}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span><DownloadOutlined /> 下载次数</span>
-                    <span style={{ fontWeight: 600, color: '#faad14' }}>789</span>
-                  </div>
-                </Col>
-                <Col span={24}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span><UserOutlined /> 新用户</span>
-                    <span style={{ fontWeight: 600, color: '#f5222d' }}>12</span>
-                  </div>
-                </Col>
-              </Row>
-            </div>
-          </Card>
-        </Col>
-
-        {/* 系统状态 */}
-        <Col xs={24} lg={8}>
-          <Card title="系统状态" style={{ height: '300px' }}>
+          <Card title="磁盘使用情况" loading={loading} style={{ height: '300px' }}>
             <div style={{ padding: '16px 0' }}>
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>CPU 使用率</span>
-                  <span>45%</span>
+                  <span>磁盘使用率</span>
                 </div>
-                <Progress percent={45} strokeColor="#1890ff" />
+                <Progress percent={statData.disk.percent.toFixed(2)} strokeColor="#faad14" />
               </div>
               
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>内存使用率</span>
-                  <span>72%</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span><DatabaseOutlined /> 总容量</span>
+                  <span style={{ fontWeight: 600, color: '#1890ff' }}>{formatBytes(statData.disk.total)}</span>
                 </div>
-                <Progress percent={72} strokeColor="#52c41a" />
+              </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span><DatabaseOutlined /> 已使用</span>
+                  <span style={{ fontWeight: 600, color: '#f5222d' }}>{formatBytes(statData.disk.used)}</span>
+                </div>
               </div>
               
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>磁盘使用率</span>
-                  <span>68%</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span><DatabaseOutlined /> 可用空间</span>
+                  <span style={{ fontWeight: 600, color: '#52c41a' }}>{formatBytes(statData.disk.free)}</span>
                 </div>
-                <Progress percent={68} strokeColor="#faad14" />
               </div>
             </div>
           </Card>
         </Col>
       </Row>
-
-      {/* 最近上传 */}
-      <Card title="最近上传" style={{ marginTop: '24px' }}>
-        <Table
-          columns={columns}
-          dataSource={recentUploads}
-          pagination={false}
-          size="middle"
-        />
-      </Card>
     </div>
   );
 };
