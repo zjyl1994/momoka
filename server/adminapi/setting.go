@@ -1,8 +1,12 @@
 package adminapi
 
 import (
+	"path/filepath"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/zjyl1994/momoka/infra/common"
+	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/service"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -34,4 +38,23 @@ func UpdateSettingHandler(c *fiber.Ctx) error {
 		return err
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func GetReadonlySettingHandler(c *fiber.Ctx) error {
+	absPath, err := filepath.Abs(vars.DataPath)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{
+		"s3_endpoint":      vars.S3Config.Endpoint,
+		"s3_bucket":        vars.S3Config.Bucket,
+		"s3_region":        vars.S3Config.Region,
+		"s3_access_id":     vars.S3Config.AccessID,
+		"s3_prefix":        vars.S3Config.Prefix,
+		"data_path":        absPath,
+		"auto_clean_days":  vars.AutoCleanDays,
+		"auto_clean_items": vars.AutoCleanItems,
+		"boot_time":        vars.BootTime.Unix(),
+		"boot_since":       int64(time.Since(vars.BootTime).Seconds()),
+	})
 }
