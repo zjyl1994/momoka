@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { Card, Tabs } from 'antd';
-import { UserOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, InfoCircleOutlined, CloudServerOutlined } from '@ant-design/icons';
 import UserManagement from './UserManagement';
 import SystemInfo from './SystemInfo';
+import BackupManagement from './BackupManagement';
 
 const Settings = () => {
   // Set page title
@@ -30,6 +31,16 @@ const Settings = () => {
         </span>
       ),
       children: <UserManagement />
+    },
+    {
+      key: 'backup-management',
+      label: (
+        <span>
+          <CloudServerOutlined />
+          备份管理
+        </span>
+      ),
+      children: <BackupManagement />
     },
   ];
 
