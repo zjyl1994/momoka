@@ -21,6 +21,7 @@ const FileManager = () => {
   const [currentItems, setCurrentItems] = useState([]);
   const [batchMoveModalVisible, setBatchMoveModalVisible] = useState(false);
   const [batchMoveTargetFolderId, setBatchMoveTargetFolderId] = useState(null);
+  const [batchDeleteModalVisible, setBatchDeleteModalVisible] = useState(false);
 
   const [dragOver, setDragOver] = useState(false);
 
@@ -183,16 +184,24 @@ const FileManager = () => {
       return;
     }
     
-    Modal.confirm({
-      title: '确认批量删除',
-      content: `确定要删除选中的 ${selectedItems.length} 个项目吗？此操作不可撤销。`,
-      okText: '确定',
-      cancelText: '取消',
-      okType: 'danger',
-      onOk: async () => {
-        await performBatchDelete();
-      },
-    });
+    // Debug: Add console log to check if function is called
+    console.log('handleBatchDelete called, selectedItems:', selectedItems);
+    
+    // Use custom modal instead of Modal.confirm
+    setBatchDeleteModalVisible(true);
+  };
+  
+  // 确认批量删除
+  const confirmBatchDelete = async () => {
+    console.log('Modal confirmed, starting batch delete');
+    setBatchDeleteModalVisible(false);
+    await performBatchDelete();
+  };
+  
+  // 取消批量删除
+  const cancelBatchDelete = () => {
+    console.log('Modal cancelled');
+    setBatchDeleteModalVisible(false);
   };
 
   // 执行批量删除
@@ -675,6 +684,27 @@ const FileManager = () => {
         <div style={{ marginTop: 16, padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
           <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
             将要移动的项目：{selectedItems.map(item => item.name).join(', ')}
+          </Typography.Text>
+        </div>
+      </Modal>
+
+      {/* 批量删除确认模态框 */}
+      <Modal
+        title="确认批量删除"
+        open={batchDeleteModalVisible}
+        onOk={confirmBatchDelete}
+        onCancel={cancelBatchDelete}
+        okText="确定"
+        cancelText="取消"
+        okType="danger"
+        centered
+      >
+        <p>
+          确定要删除选中的 <strong>{selectedItems.length}</strong> 个项目吗？此操作不可撤销。
+        </p>
+        <div style={{ marginTop: 16, padding: '8px', background: '#fff2f0', borderRadius: '4px', border: '1px solid #ffccc7' }}>
+          <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+            将要删除的项目：{selectedItems.map(item => item.name).join(', ')}
           </Typography.Text>
         </div>
       </Modal>

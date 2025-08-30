@@ -146,7 +146,7 @@ const ImageList = () => {
     setPreviewVisible(true);
   };
 
-  // 渲染瀑布流
+  // 简化的瀑布流渲染
   const renderWaterfall = () => {
     if (loading && images.length === 0) {
       return (
@@ -164,81 +164,20 @@ const ImageList = () => {
       );
     }
 
+    // Simple waterfall layout: distribute images to shortest column
     const columns = Array.from({ length: columnCount }, () => []);
     const heights = new Array(columnCount).fill(0);
 
-    // 改进的布局算法：使用贪心算法实现最优分配
-    const imageHeights = images.map(image => {
+    images.forEach(image => {
+      // Calculate estimated height based on aspect ratio
       const aspectRatio = image.width && image.height ? image.height / image.width : 1;
-      return {
-        image,
-        height: Math.max(200, Math.min(400, 250 * aspectRatio)) + 80
-      };
-    });
-    
-    // 使用贪心算法分配图片到各列
-    imageHeights.forEach(({ image, height }) => {
+      const estimatedHeight = Math.max(200, Math.min(400, 250 * aspectRatio)) + 80;
+      
+      // Find the shortest column and add image to it
       const shortestIndex = heights.indexOf(Math.min(...heights));
       columns[shortestIndex].push(image);
-      heights[shortestIndex] += height;
+      heights[shortestIndex] += estimatedHeight;
     });
-    
-    // 多轮平衡算法：持续优化直到列高度差异足够小
-    let maxIterations = 3;
-    let iteration = 0;
-    
-    while (iteration < maxIterations) {
-      const maxHeight = Math.max(...heights);
-      const minHeight = Math.min(...heights);
-      const heightDiff = maxHeight - minHeight;
-      
-      // 如果高度差异小于300px，认为已经足够平衡
-      if (heightDiff < 300) break;
-      
-      const maxIndex = heights.indexOf(maxHeight);
-      const minIndex = heights.indexOf(minHeight);
-      
-      // 尝试从最高列移动图片到最低列
-      if (columns[maxIndex].length > 1) {
-        // 找到最适合移动的图片（移动后能最大程度减少高度差异）
-        let bestMoveIndex = -1;
-        let bestHeightReduction = 0;
-        
-        for (let i = columns[maxIndex].length - 1; i >= Math.max(0, columns[maxIndex].length - 3); i--) {
-          const moveImage = columns[maxIndex][i];
-          const aspectRatio = moveImage.width && moveImage.height ? moveImage.height / moveImage.width : 1;
-          const moveHeight = Math.max(200, Math.min(400, 250 * aspectRatio)) + 80;
-          
-          const newMaxHeight = heights[maxIndex] - moveHeight;
-          const newMinHeight = heights[minIndex] + moveHeight;
-          const newHeightDiff = Math.abs(newMaxHeight - newMinHeight);
-          
-          if (newHeightDiff < heightDiff) {
-            const reduction = heightDiff - newHeightDiff;
-            if (reduction > bestHeightReduction) {
-              bestHeightReduction = reduction;
-              bestMoveIndex = i;
-            }
-          }
-        }
-        
-        if (bestMoveIndex >= 0) {
-          const moveImage = columns[maxIndex].splice(bestMoveIndex, 1)[0];
-          const aspectRatio = moveImage.width && moveImage.height ? moveImage.height / moveImage.width : 1;
-          const moveHeight = Math.max(200, Math.min(400, 250 * aspectRatio)) + 80;
-          
-          columns[minIndex].push(moveImage);
-          heights[maxIndex] -= moveHeight;
-          heights[minIndex] += moveHeight;
-        } else {
-          break; // 无法找到合适的移动，退出循环
-        }
-      } else {
-        break; // 最高列只有一张图片，无法移动
-      }
-      
-      iteration++;
-    }
 
     return (
       <div key={layoutKey} style={{ display: 'flex', gap: '16px' }}>
@@ -253,12 +192,14 @@ const ImageList = () => {
                 onClick={() => handleViewImage(image)}
               >
                 <div style={{ position: 'relative' }}>
-                  <Image
-                    src={image.url}
-                    alt={image.file_name}
-                    style={{ width: '100%', display: 'block' }}
-                    preview={false}
-                  />
+                  {image.url && (
+                    <Image
+                      src={image.url}
+                      alt={image.file_name}
+                      style={{ width: '100%', display: 'block' }}
+                      preview={false}
+                    />
+                  )}
                   <div
                     style={{
                       position: 'absolute',
@@ -319,14 +260,16 @@ const ImageList = () => {
       </div>
 
       {/* 图片预览 */}
-      <Image
-        style={{ display: 'none' }}
-        src={previewImage}
-        preview={{
-          visible: previewVisible,
-          onVisibleChange: setPreviewVisible
-        }}
-      />
+      {previewImage && (
+        <Image
+          style={{ display: 'none' }}
+          src={previewImage}
+          preview={{
+            visible: previewVisible,
+            onVisibleChange: setPreviewVisible
+          }}
+        />
+      )}
     </div>
   );
 };
