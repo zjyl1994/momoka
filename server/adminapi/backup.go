@@ -37,7 +37,7 @@ func RestoreBackupHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	err = service.BackupService.RestoreMetadata([]byte(req.Name))
+	err = service.BackupService.ApplyBackup(req.Name)
 	if err != nil {
 		return err
 	}

@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
@@ -29,11 +29,12 @@ func (s *backupService) GenerateMetadata() ([]byte, error) {
 	if err := vars.Database.Find(&settings).Error; err != nil {
 		return nil, err
 	}
-	result := make(map[string]any)
-	result["version"] = 1
-	result["folders"] = folders
-	result["images"] = images
-	result["settings"] = settings
+	result := common.BackupFormat{
+		Version:     1,
+		ImageFolder: folders,
+		Images:      images,
+		Settings:    settings,
+	}
 	data, err := json.Marshal(result)
 	if err != nil {
 		return nil, err
@@ -46,41 +47,29 @@ func (s *backupService) RestoreMetadata(data []byte) error {
 	if err != nil {
 		return err
 	}
-	var result map[string]any
+	var result common.BackupFormat
 	if err := json.Unmarshal(extracted, &result); err != nil {
 		return err
-	}
-	folders, ok := result["folders"].([]common.ImageFolder)
-	if !ok {
-		return errors.New("invalid metadata")
-	}
-	images, ok := result["images"].([]common.Image)
-	if !ok {
-		return errors.New("invalid metadata")
-	}
-	settings, ok := result["settings"].([]common.Setting)
-	if !ok {
-		return errors.New("invalid metadata")
 	}
 	return vars.Database.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&common.ImageFolder{}).Error; err != nil {
 			return err
 		}
-		if err := tx.CreateInBatches(&folders, 100).Error; err != nil {
+		if err := tx.CreateInBatches(&result.ImageFolder, 100).Error; err != nil {
 			return err
 		}
 
 		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&common.Image{}).Error; err != nil {
 			return err
 		}
-		if err := tx.CreateInBatches(&images, 100).Error; err != nil {
+		if err := tx.CreateInBatches(&result.Images, 100).Error; err != nil {
 			return err
 		}
 
 		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&common.Setting{}).Error; err != nil {
 			return err
 		}
-		if err := tx.CreateInBatches(&settings, 100).Error; err != nil {
+		if err := tx.CreateInBatches(&result.Settings, 100).Error; err != nil {
 			return err
 		}
 		return nil
@@ -105,5 +94,9 @@ func (s *backupService) ApplyBackup(name string) error {
 	if err != nil {
 		return err
 	}
-	return s.RestoreMetadata(data)
+	logrus.Debugln("ApplyBackup", name, len(data))
+	if err := s.RestoreMetadata(data); err != nil {
+		return err
+	}
+	return nil
 }
