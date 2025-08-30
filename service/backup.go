@@ -139,7 +139,7 @@ func BackgroundBackupTask(ctx context.Context) {
 		return
 	}
 	autoBackups := lo.Filter(backups, func(item common.FileInfo, index int) bool {
-		return strings.HasPrefix(item.Name, common.AUTO_BACKUP_PREFIX)
+		return strings.HasSuffix(item.Name, ".auto")
 	})
 	if len(autoBackups) > 5 {
 		// 排序，保留最新的5个
@@ -154,7 +154,7 @@ func BackgroundBackupTask(ctx context.Context) {
 		}
 	}
 	// 生成新的自动备份
-	if err := BackupService.MakeBackup(common.AUTO_BACKUP_PREFIX + today); err != nil {
+	if err := BackupService.MakeBackup(today + ".auto"); err != nil {
 		logrus.Errorf("MakeBackup failed: %v", err)
 	}
 	// 更新备份信息

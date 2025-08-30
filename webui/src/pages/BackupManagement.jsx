@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Table, message, Modal, Input, Space, Popconfirm } from 'antd';
+import { Card, Button, Table, message, Modal, Input, Space, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, CloudDownloadOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 
@@ -124,6 +124,18 @@ const BackupManagement = () => {
     return new Date(dateString).toLocaleString('zh-CN');
   };
 
+  // Remove file extension from display name
+  const getDisplayName = (fileName) => {
+    const lastDotIndex = fileName.lastIndexOf('.');
+    if (lastDotIndex === -1) return fileName;
+    return fileName.substring(0, lastDotIndex);
+  };
+
+  // Check if file is auto backup
+  const isAutoBackup = (fileName) => {
+    return fileName.endsWith('.auto');
+  };
+
   // Table columns
   const columns = [
     {
@@ -131,6 +143,16 @@ const BackupManagement = () => {
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      render: (name) => (
+        <Space>
+          <span>{getDisplayName(name)}</span>
+          {isAutoBackup(name) && (
+            <Tag color="blue" size="small">
+              自动备份
+            </Tag>
+          )}
+        </Space>
+      ),
     },
     {
       title: '文件大小',
@@ -140,7 +162,7 @@ const BackupManagement = () => {
       width: 120,
     },
     {
-      title: '创建时间',
+      title: '修改时间',
       dataIndex: 'mod_time',
       key: 'modTime',
       render: (time) => formatDate(time),
