@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Image, Spin, Empty, message } from 'antd';
 import { authFetch } from '../utils/api';
+import Masonry from 'react-masonry-css';
 
 const ImageList = () => {
   const [loading, setLoading] = useState(false);
@@ -17,11 +18,16 @@ const ImageList = () => {
   const [pageSize] = useState(20);
   const containerRef = useRef(null);
   const currentPageRef = useRef(1);
-  const [columnCount, setColumnCount] = useState(4);
+  const [breakpointColumnsObj, setBreakpointColumnsObj] = useState({
+    default: 4,
+    1400: 4,
+    1100: 3,
+    800: 2,
+    500: 1
+  });
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
   const initializedRef = useRef(false);
-  const [layoutKey, setLayoutKey] = useState(0); // 用于强制重新布局
 
   // 获取图片列表
   const fetchImages = async (page = 1, size = 20, isLoadMore = false) => {
@@ -61,8 +67,7 @@ const ImageList = () => {
           setCurrentPage(page);
         }
         
-        // 触发布局重新计算
-        setLayoutKey(prev => prev + 1);
+        // 布局会自动重新计算
       } else {
         message.error('获取图片列表失败');
       }
@@ -75,22 +80,7 @@ const ImageList = () => {
     }
   };
 
-  // 响应式列数计算
-  const updateColumnCount = useCallback(() => {
-    if (containerRef.current) {
-      const containerWidth = containerRef.current.offsetWidth;
-      const minColumnWidth = 250; // 最小列宽
-      const gap = 16; // 间距
-      const newColumnCount = Math.max(1, Math.floor((containerWidth + gap) / (minColumnWidth + gap)));
-      setColumnCount(newColumnCount);
-    }
-  }, []);
-
-  useEffect(() => {
-    updateColumnCount();
-    window.addEventListener('resize', updateColumnCount);
-    return () => window.removeEventListener('resize', updateColumnCount);
-  }, [updateColumnCount]);
+  // 响应式列数已通过 breakpointColumnsObj 设置，不需要额外计算
 
   useEffect(() => {
     if (!initializedRef.current) {
@@ -146,7 +136,9 @@ const ImageList = () => {
     setPreviewVisible(true);
   };
 
-  // 简化的瀑布流渲染
+  // 使用 react-masonry-css 组件，不需要自定义瀑布流布局算法
+
+  // 瀑布流渲染
   const renderWaterfall = () => {
     if (loading && images.length === 0) {
       return (
@@ -164,67 +156,52 @@ const ImageList = () => {
       );
     }
 
-    // Simple waterfall layout: distribute images to shortest column
-    const columns = Array.from({ length: columnCount }, () => []);
-    const heights = new Array(columnCount).fill(0);
-
-    images.forEach(image => {
-      // Calculate estimated height based on aspect ratio
-      const aspectRatio = image.width && image.height ? image.height / image.width : 1;
-      const estimatedHeight = Math.max(200, Math.min(400, 250 * aspectRatio)) + 80;
-      
-      // Find the shortest column and add image to it
-      const shortestIndex = heights.indexOf(Math.min(...heights));
-      columns[shortestIndex].push(image);
-      heights[shortestIndex] += estimatedHeight;
-    });
-
     return (
-      <div key={layoutKey} style={{ display: 'flex', gap: '16px' }}>
-        {columns.map((column, columnIndex) => (
-          <div key={columnIndex} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {column.map((image) => (
-              <Card
-                key={image.id}
-                hoverable
-                style={{ borderRadius: '8px', overflow: 'hidden' }}
-                styles={{ body: { padding: 0 } }}
-                onClick={() => handleViewImage(image)}
+      <Masonry
+        breakpointCols={breakpointColumnsObj}
+        className="masonry-grid"
+        columnClassName="masonry-grid_column"
+      >
+        {images.map((image) => (
+          <Card
+            key={image.id}
+            hoverable
+            style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden' }}
+            styles={{ body: { padding: 0 } }}
+            onClick={() => handleViewImage(image)}
+          >
+            <div style={{ position: 'relative' }}>
+              {image.url && (
+                <Image
+                  src={image.url}
+                  alt={image.file_name}
+                  style={{ width: '100%', display: 'block' }}
+                  preview={false}
+                />
+              )}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                  color: 'white',
+                  padding: '20px 12px 12px',
+                  fontSize: '12px'
+                }}
               >
-                <div style={{ position: 'relative' }}>
-                  {image.url && (
-                    <Image
-                      src={image.url}
-                      alt={image.file_name}
-                      style={{ width: '100%', display: 'block' }}
-                      preview={false}
-                    />
-                  )}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-                      color: 'white',
-                      padding: '20px 12px 12px',
-                      fontSize: '12px'
-                    }}
-                  >
-                    <div style={{ fontWeight: 500, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {image.file_name}
-                    </div>
-                    <div style={{ opacity: 0.8 }}>
-                      {formatFileSize(image.file_size)} • {formatTime(image.create_time)}
-                    </div>
-                  </div>
+                <div style={{ fontWeight: 500, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {image.file_name}
                 </div>
-              </Card>
-            ))}
-          </div>
+                <div style={{ opacity: 0.8 }}>
+                  {formatFileSize(image.file_size)} • {formatTime(image.create_time)}
+                </div>
+              </div>
+            </div>
+          </Card>
         ))}
-      </div>
+      </Masonry>
     );
   };
 
@@ -242,6 +219,19 @@ const ImageList = () => {
           background: '#f5f5f5'
         }}
       >
+        <style>
+          {`
+            .masonry-grid {
+              display: flex;
+              width: 100%;
+              margin-left: -16px; /* 负边距，与列间距相同 */
+            }
+            .masonry-grid_column {
+              padding-left: 16px; /* 列间距 */
+              background-clip: padding-box;
+            }
+          `}
+        </style>
         {renderWaterfall()}
         
         {/* 加载更多提示 */}
