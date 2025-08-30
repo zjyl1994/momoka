@@ -1,34 +1,53 @@
 package adminapi
 
 import (
+	"strings"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/service"
 )
 
+type backupReq struct {
+	Name string `json:"name"`
+}
+
 func GenerateBackupHandler(c *fiber.Ctx) error {
-	data, err := service.BackupService.GenerateMetadata()
+	var req backupReq
+	err := c.BodyParser(&req)
 	if err != nil {
 		return err
 	}
-	data, err = utils.CompressBrotli(data)
+	if req.Name == "" {
+		req.Name = time.Now().Format("20060102-150405")
+	}
+	if !strings.HasSuffix(req.Name, ".bin") {
+		req.Name += ".bin"
+	}
+	err = service.BackupService.MakeBackup(req.Name)
 	if err != nil {
 		return err
 	}
-	c.Set("Content-Type", "application/octet-stream")
-	c.Set("Content-Disposition", "attachment; filename=momoka.bin")
-	return c.Send(data)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func RestoreBackupHandler(c *fiber.Ctx) error {
-	body := c.Body()
-	data, err := utils.DecompressBrotli(body)
+	var req backupReq
+	err := c.BodyParser(&req)
 	if err != nil {
 		return err
 	}
-	err = service.BackupService.RestoreMetadata(data)
+	err = service.BackupService.RestoreMetadata([]byte(req.Name))
 	if err != nil {
 		return err
 	}
-	return c.SendString("ok")
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func ListBackupHandler(c *fiber.Ctx) error {
+	backups, err := service.BackupService.ListBackups()
+	if err != nil {
+		return err
+	}
+	return c.JSON(backups)
 }
