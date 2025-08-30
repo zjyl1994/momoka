@@ -6,8 +6,8 @@ const (
 )
 
 const (
-	SETTING_KEY_ADMIN_USER     = "admin_user"
-	SETTING_KEY_ADMIN_PASSWORD = "admin_password"
+	SETTING_KEY_ADMIN_USER      = "admin_user"
+	SETTING_KEY_ADMIN_PASSWORD  = "admin_password"
 	SETTING_KEY_AUTO_BACKUP_DAY = "auto_backup_day"
 )
 
@@ -19,5 +19,6 @@ const (
 const (
 	MAX_IMAGE_SIZE = 50 * 1024 * 1024
 
-	AUTO_BACKUP_PREFIX = "auto-"
+	AUTO_BACKUP_PREFIX  = "auto-"
+	BACKUP_FILE_VERSION = 1
 )

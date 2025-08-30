@@ -412,10 +412,10 @@ const FileManager = () => {
   };
 
   return (
-    <div style={{ height: '100vh', overflow: 'hidden' }}>
-      <Layout style={{ height: '100vh', background: '#fff' }}>
+    <div style={{ height: '100%', overflow: 'hidden' }}>
+      <Layout style={{ height: '100%', background: '#fff' }}>
         {/* 主内容区域 */}
-        <Layout style={{ background: '#fff', height: '100vh', overflow: 'hidden' }}>
+        <Layout style={{ background: '#fff', height: '100%', overflow: 'hidden' }}>
           {/* 顶部工具栏 */}
           <div
             style={{

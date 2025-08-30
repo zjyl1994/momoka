@@ -16,9 +16,12 @@ const ImageList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const containerRef = useRef(null);
+  const currentPageRef = useRef(1);
   const [columnCount, setColumnCount] = useState(4);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
+  const initializedRef = useRef(false);
+  const [layoutKey, setLayoutKey] = useState(0); // 用于强制重新布局
 
   // 获取图片列表
   const fetchImages = async (page = 1, size = 20, isLoadMore = false) => {
@@ -40,13 +43,26 @@ const ImageList = () => {
         const newImages = data.images || [];
         
         if (isLoadMore) {
-          setImages(prev => [...prev, ...newImages]);
+          // Merge and deduplicate images by ID to avoid duplicate keys
+          setImages(prev => {
+            const existingIds = new Set(prev.map(img => img.id));
+            const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
+            return [...prev, ...uniqueNewImages];
+          });
         } else {
           setImages(newImages);
         }
         
         // 检查是否还有更多数据
         setHasMore(newImages.length === size);
+        
+        // Update current page after successful fetch
+        if (isLoadMore) {
+          setCurrentPage(page);
+        }
+        
+        // 触发布局重新计算
+        setLayoutKey(prev => prev + 1);
       } else {
         message.error('获取图片列表失败');
       }
@@ -76,30 +92,38 @@ const ImageList = () => {
     return () => window.removeEventListener('resize', updateColumnCount);
   }, [updateColumnCount]);
 
-
-
   useEffect(() => {
-    fetchImages(1, pageSize, false);
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      fetchImages(1, pageSize, false);
+    }
   }, []);
 
-  // 滚动监听
+  // Update currentPageRef when currentPage changes
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
+
+  // 滚动监听 - 监听window滚动而不是容器滚动
   const handleScroll = useCallback(() => {
     if (!containerRef.current || loading || loadingMore || !hasMore) return;
     
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    if (scrollTop + clientHeight >= scrollHeight - 100) {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
+    const windowScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+    const scrollBottom = windowScrollTop + windowHeight;
+    const threshold = documentHeight - 200; // Increase threshold to 200px
+    
+    if (scrollBottom >= threshold) {
+      const nextPage = currentPageRef.current + 1;
+      console.log('Loading next page:', nextPage);
       fetchImages(nextPage, pageSize, true);
     }
-  }, [loading, loadingMore, hasMore, currentPage, pageSize]);
+  }, [loading, loadingMore, hasMore, pageSize]);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
-    }
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
   // 格式化文件大小
@@ -143,15 +167,81 @@ const ImageList = () => {
     const columns = Array.from({ length: columnCount }, () => []);
     const heights = new Array(columnCount).fill(0);
 
-    images.forEach((image) => {
+    // 改进的布局算法：使用贪心算法实现最优分配
+    const imageHeights = images.map(image => {
+      const aspectRatio = image.width && image.height ? image.height / image.width : 1;
+      return {
+        image,
+        height: Math.max(200, Math.min(400, 250 * aspectRatio)) + 80
+      };
+    });
+    
+    // 使用贪心算法分配图片到各列
+    imageHeights.forEach(({ image, height }) => {
       const shortestIndex = heights.indexOf(Math.min(...heights));
       columns[shortestIndex].push(image);
-      // 估算图片高度
-      heights[shortestIndex] += 300;
+      heights[shortestIndex] += height;
     });
+    
+    // 多轮平衡算法：持续优化直到列高度差异足够小
+    let maxIterations = 3;
+    let iteration = 0;
+    
+    while (iteration < maxIterations) {
+      const maxHeight = Math.max(...heights);
+      const minHeight = Math.min(...heights);
+      const heightDiff = maxHeight - minHeight;
+      
+      // 如果高度差异小于300px，认为已经足够平衡
+      if (heightDiff < 300) break;
+      
+      const maxIndex = heights.indexOf(maxHeight);
+      const minIndex = heights.indexOf(minHeight);
+      
+      // 尝试从最高列移动图片到最低列
+      if (columns[maxIndex].length > 1) {
+        // 找到最适合移动的图片（移动后能最大程度减少高度差异）
+        let bestMoveIndex = -1;
+        let bestHeightReduction = 0;
+        
+        for (let i = columns[maxIndex].length - 1; i >= Math.max(0, columns[maxIndex].length - 3); i--) {
+          const moveImage = columns[maxIndex][i];
+          const aspectRatio = moveImage.width && moveImage.height ? moveImage.height / moveImage.width : 1;
+          const moveHeight = Math.max(200, Math.min(400, 250 * aspectRatio)) + 80;
+          
+          const newMaxHeight = heights[maxIndex] - moveHeight;
+          const newMinHeight = heights[minIndex] + moveHeight;
+          const newHeightDiff = Math.abs(newMaxHeight - newMinHeight);
+          
+          if (newHeightDiff < heightDiff) {
+            const reduction = heightDiff - newHeightDiff;
+            if (reduction > bestHeightReduction) {
+              bestHeightReduction = reduction;
+              bestMoveIndex = i;
+            }
+          }
+        }
+        
+        if (bestMoveIndex >= 0) {
+          const moveImage = columns[maxIndex].splice(bestMoveIndex, 1)[0];
+          const aspectRatio = moveImage.width && moveImage.height ? moveImage.height / moveImage.width : 1;
+          const moveHeight = Math.max(200, Math.min(400, 250 * aspectRatio)) + 80;
+          
+          columns[minIndex].push(moveImage);
+          heights[maxIndex] -= moveHeight;
+          heights[minIndex] += moveHeight;
+        } else {
+          break; // 无法找到合适的移动，退出循环
+        }
+      } else {
+        break; // 最高列只有一张图片，无法移动
+      }
+      
+      iteration++;
+    }
 
     return (
-      <div style={{ display: 'flex', gap: '16px' }}>
+      <div key={layoutKey} style={{ display: 'flex', gap: '16px' }}>
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {column.map((image) => (
@@ -159,7 +249,7 @@ const ImageList = () => {
                 key={image.id}
                 hoverable
                 style={{ borderRadius: '8px', overflow: 'hidden' }}
-                bodyStyle={{ padding: 0 }}
+                styles={{ body: { padding: 0 } }}
                 onClick={() => handleViewImage(image)}
               >
                 <div style={{ position: 'relative' }}>
@@ -200,14 +290,13 @@ const ImageList = () => {
 
 
   return (
-    <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
       {/* 瀑布流容器 */}
       <div 
         ref={containerRef} 
         style={{ 
           flex: 1, 
-          overflow: 'auto', 
           padding: '16px',
           background: '#f5f5f5'
         }}

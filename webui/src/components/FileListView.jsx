@@ -562,8 +562,18 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
 
   return (
     <div style={{ height: '100%', overflow: 'hidden' }}>
-
+      <style>
+        {`
+          .file-list-table .ant-table-selection-column {
+            padding-left: 16px !important;
+          }
+          .file-list-table .ant-checkbox-wrapper {
+            margin-left: 0;
+          }
+        `}
+      </style>
       <Table
+        className="file-list-table"
         columns={columns}
         dataSource={items}
         pagination={false}

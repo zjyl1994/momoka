@@ -167,7 +167,7 @@ const ImageUpload = () => {
   };
 
   return (
-    <Card title="上传图片" style={{ height: '100%', borderRadius: 0, border: 'none' }}>
+    <div  style={{ padding: '24px' }}>
         <Form
           form={form}
           layout="vertical"
@@ -436,7 +436,7 @@ const ImageUpload = () => {
             ))}
           </Card>
         )}
-      </Card>
+      </div>
   );
 };
 

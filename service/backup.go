@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -34,7 +35,7 @@ func (s *backupService) GenerateMetadata() ([]byte, error) {
 		return nil, err
 	}
 	result := common.BackupFormat{
-		Version:     1,
+		Version:     common.BACKUP_FILE_VERSION,
 		ImageFolder: folders,
 		Images:      images,
 		Settings:    settings,
@@ -54,6 +55,9 @@ func (s *backupService) RestoreMetadata(data []byte) error {
 	var result common.BackupFormat
 	if err := json.Unmarshal(extracted, &result); err != nil {
 		return err
+	}
+	if result.Version > common.BACKUP_FILE_VERSION {
+		return errors.New("backup file version is not supported")
 	}
 	return vars.Database.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&common.ImageFolder{}).Error; err != nil {
