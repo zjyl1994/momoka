@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Table, message, Modal, Input, Space, Popconfirm } from 'antd';
-import { PlusOutlined, CloudDownloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, CloudDownloadOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 
 const BackupManagement = () => {
@@ -200,7 +200,8 @@ const BackupManagement = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+        <div><InfoCircleOutlined /> 此处只能备份元数据信息到S3，包括但不限于图片信息/文件夹结构/系统设置等。图片本身的安全性依赖S3存储桶。</div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
