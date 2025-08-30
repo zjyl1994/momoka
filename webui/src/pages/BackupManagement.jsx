@@ -10,6 +10,7 @@ const BackupManagement = () => {
   const [backupName, setBackupName] = useState('');
   const [creating, setCreating] = useState(false);
   const [restoringBackup, setRestoringBackup] = useState(null); // Track which backup is being restored
+  const [deletingBackup, setDeletingBackup] = useState(null); // Track which backup is being deleted
 
   // Load backup list
   const loadBackups = async () => {
@@ -87,6 +88,28 @@ const BackupManagement = () => {
     }
   };
 
+  // Delete backup
+  const handleDeleteBackup = async (backupFileName) => {
+    try {
+      setDeletingBackup(backupFileName); // Set which backup is being deleted
+      const response = await authFetch(`/admin-api/backup?name=${encodeURIComponent(backupFileName)}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete backup');
+      }
+
+      message.success('备份删除成功');
+      loadBackups(); // Reload backup list
+    } catch (error) {
+      console.error('Error deleting backup:', error);
+      message.error('删除备份失败');
+    } finally {
+      setDeletingBackup(null); // Clear deleting state
+    }
+  };
+
   // Format file size
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 B';
@@ -126,7 +149,7 @@ const BackupManagement = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 120,
+      width: 160,
       render: (_, record) => (
         <Space>
           <Popconfirm
@@ -142,9 +165,28 @@ const BackupManagement = () => {
               size="small"
               icon={<CloudDownloadOutlined />}
               loading={restoringBackup === record.name}
-              disabled={restoringBackup !== null && restoringBackup !== record.name}
+              disabled={restoringBackup !== null && restoringBackup !== record.name || deletingBackup !== null}
             >
               恢复
+            </Button>
+          </Popconfirm>
+          <Popconfirm
+            title="确定要删除此备份吗？"
+            description="删除后无法恢复，请谨慎操作！"
+            onConfirm={() => handleDeleteBackup(record.name)}
+            okText="确定"
+            cancelText="取消"
+            okType="danger"
+          >
+            <Button
+              type="default"
+              size="small"
+              icon={<DeleteOutlined />}
+              loading={deletingBackup === record.name}
+              disabled={deletingBackup !== null && deletingBackup !== record.name || restoringBackup !== null}
+              danger
+            >
+              删除
             </Button>
           </Popconfirm>
         </Space>
@@ -164,7 +206,7 @@ const BackupManagement = () => {
           icon={<PlusOutlined />}
           onClick={() => setCreateModalVisible(true)}
           loading={creating}
-          disabled={restoringBackup !== null}
+          disabled={restoringBackup !== null || deletingBackup !== null}
         >
           创建备份
         </Button>
@@ -173,7 +215,7 @@ const BackupManagement = () => {
       <Table
         columns={columns}
         dataSource={backups}
-        loading={loading || creating || restoringBackup !== null}
+        loading={loading || creating || restoringBackup !== null || deletingBackup !== null}
         rowKey="name"
         pagination={{
           pageSize: 10,

@@ -113,6 +113,8 @@ func Startup() (err error) {
 			}
 		})
 	}
+	// 启动后台自动备份服务
+	go utils.RunTickerTask(context.Background(), time.Hour, true, service.BackgroundBackupTask)
 
 	return server.Run(vars.ListenAddr)
 }

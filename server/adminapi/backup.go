@@ -51,3 +51,11 @@ func ListBackupHandler(c *fiber.Ctx) error {
 	}
 	return c.JSON(backups)
 }
+
+func DeleteBackupHandler(c *fiber.Ctx) error {
+	name := c.Query("name")
+	if err := service.BackupService.DeleteBackup(name); err != nil {
+		return err
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}

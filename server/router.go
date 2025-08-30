@@ -73,6 +73,7 @@ func Run(listenAddr string) error {
 	adminAPI.Post("/backup/generate", adminapi.GenerateBackupHandler)
 	adminAPI.Post("/backup/restore", adminapi.RestoreBackupHandler)
 	adminAPI.Get("/backup", adminapi.ListBackupHandler)
+	adminAPI.Delete("/backup", adminapi.DeleteBackupHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,

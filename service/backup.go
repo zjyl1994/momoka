@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"sort"
+	"strings"
+	"time"
 
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
@@ -86,7 +90,14 @@ func (s *backupService) MakeBackup(name string) error {
 }
 
 func (s *backupService) ListBackups() ([]common.FileInfo, error) {
-	return StorageService.List(context.Background(), "backup")
+	list, err := StorageService.List(context.Background(), "backup")
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].ModTime.After(list[j].ModTime)
+	})
+	return list, nil
 }
 
 func (s *backupService) ApplyBackup(name string) error {
@@ -99,4 +110,51 @@ func (s *backupService) ApplyBackup(name string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *backupService) DeleteBackup(name string) error {
+	return StorageService.Delete(context.Background(), filepath.Join("backup", name))
+}
+
+func BackgroundBackupTask(ctx context.Context) {
+	today := time.Now().Format("2006-01-02")
+	// 加载备份状态
+	backupDay, err := SettingService.Get(common.SETTING_KEY_AUTO_BACKUP_DAY)
+	if err != nil {
+		logrus.Errorf("GetSetting failed: %v", err)
+		return
+	}
+
+	if backupDay == today { // 今天已备份，跳过
+		return
+	}
+	// 列出已有备份，只保留5个自动备份
+	backups, err := BackupService.ListBackups()
+	if err != nil {
+		logrus.Errorf("ListBackups failed: %v", err)
+		return
+	}
+	autoBackups := lo.Filter(backups, func(item common.FileInfo, index int) bool {
+		return strings.HasPrefix(item.Name, common.AUTO_BACKUP_PREFIX)
+	})
+	if len(autoBackups) > 5 {
+		// 排序，保留最新的5个
+		sort.Slice(autoBackups, func(i, j int) bool {
+			return autoBackups[i].ModTime.After(autoBackups[j].ModTime)
+		})
+		// 删除旧的备份
+		for i := 5; i < len(autoBackups); i++ {
+			if err := StorageService.Delete(context.Background(), filepath.Join("backup", autoBackups[i].Name)); err != nil {
+				logrus.Errorf("Delete backup %s failed: %v", autoBackups[i].Name, err)
+			}
+		}
+	}
+	// 生成新的自动备份
+	if err := BackupService.MakeBackup(common.AUTO_BACKUP_PREFIX + today); err != nil {
+		logrus.Errorf("MakeBackup failed: %v", err)
+	}
+	// 更新备份信息
+	if err := SettingService.Set(common.SETTING_KEY_AUTO_BACKUP_DAY, today); err != nil {
+		logrus.Errorf("SetSetting failed: %v", err)
+	}
 }
