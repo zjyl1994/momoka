@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
@@ -177,4 +178,53 @@ func (s *storageService) DownloadToMem(ctx context.Context, remotePath string) (
 
 	// Read all data into memory
 	return io.ReadAll(resp.Body)
+}
+
+func (s *storageService) DeleteKeys(ctx context.Context, remotePaths []string) ([]string, error) {
+	// 存储删除失败的key
+	var failedKeys []string
+
+	// 构建删除对象列表
+	objects := make([]types.ObjectIdentifier, len(remotePaths))
+	for i, path := range remotePaths {
+		fullRemotePath := filepath.Join(vars.S3Config.Prefix, path)
+		objects[i] = types.ObjectIdentifier{
+			Key: aws.String(fullRemotePath),
+		}
+	}
+
+	// 批量删除请求
+	deleteInput := &s3.DeleteObjectsInput{
+		Bucket: aws.String(vars.S3Config.Bucket),
+		Delete: &types.Delete{
+			Objects: objects,
+			// 禁用静默模式，返回每个对象的删除结果
+			Quiet: aws.Bool(false),
+		},
+	}
+
+	// 执行批量删除
+	output, err := vars.S3Client.DeleteObjects(ctx, deleteInput)
+	if err != nil {
+		return remotePaths, err // 如果整个请求失败，返回所有key作为失败key
+	}
+
+	// 处理删除结果
+	if len(output.Errors) > 0 {
+		for _, err := range output.Errors {
+			if err.Key != nil {
+				// 从完整路径中移除prefix以获取相对路径
+				relativePath := *err.Key
+				if vars.S3Config.Prefix != "" {
+					relativePath = filepath.Clean(relativePath[len(vars.S3Config.Prefix):])
+					if relativePath == "." {
+						relativePath = ""
+					}
+				}
+				failedKeys = append(failedKeys, relativePath)
+			}
+		}
+	}
+
+	return failedKeys, nil
 }
