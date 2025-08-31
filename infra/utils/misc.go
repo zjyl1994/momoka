@@ -165,3 +165,43 @@ func GetFolderForDashboard(path string) (int64, int64, error) {
 
 	return fileCount, totalSize, nil
 }
+
+func ScanFolder(path string) ([]common.FileInfo, error) {
+	var files []common.FileInfo
+
+	// 遍历目录下的所有文件
+	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 跳过目录
+		if info.IsDir() {
+			return nil
+		}
+
+		// 获取相对路径
+		relPath, err := filepath.Rel(path, filePath)
+		if err != nil {
+			return err
+		}
+
+		// 构建FileInfo结构
+		fileInfo := common.FileInfo{
+			Name:    info.Name(),
+			Ext:     filepath.Ext(info.Name()),
+			Path:    relPath,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		}
+
+		files = append(files, fileInfo)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
