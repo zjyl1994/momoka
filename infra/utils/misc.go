@@ -8,10 +8,12 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -141,7 +143,13 @@ func GetImageURL(c *fiber.Ctx, img *common.Image) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return c.BaseURL() + "/i/" + imageHashId + img.ExtName, nil
+	var baseUrl string
+	if vars.BaseURL != "" {
+		baseUrl = vars.BaseURL
+	} else {
+		baseUrl = c.BaseURL()
+	}
+	return baseUrl + "/i/" + imageHashId + img.ExtName, nil
 }
 
 func GetFolderForDashboard(path string) (int64, int64, error) {
@@ -204,4 +212,13 @@ func ScanFolder(path string) ([]common.FileInfo, error) {
 	}
 
 	return files, nil
+}
+
+func RandStr(length int) string {
+	charset := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	var sb strings.Builder
+	for range length {
+		sb.WriteRune(charset[rand.IntN(len(charset))])
+	}
+	return sb.String()
 }

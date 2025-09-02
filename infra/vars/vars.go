@@ -21,6 +21,7 @@ var (
 	AutoCleanDays  int
 	AutoCleanItems int
 	BootTime       time.Time
+	BaseURL        string
 )
 
 type S3Conf struct {

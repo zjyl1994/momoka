@@ -6,9 +6,11 @@ const (
 )
 
 const (
-	SETTING_KEY_ADMIN_USER      = "admin_user"
-	SETTING_KEY_ADMIN_PASSWORD  = "admin_password"
-	SETTING_KEY_AUTO_BACKUP_DAY = "auto_backup_day"
+	SETTING_KEY_ADMIN_USER         = "admin_user"
+	SETTING_KEY_ADMIN_PASSWORD     = "admin_password"
+	SETTING_KEY_AUTO_BACKUP_DAY    = "auto_backup_day"
+	SETTING_KEY_SYSTEM_RAND_SECRET = "system_rand_secret"
+	SETTING_KEY_BASE_URL           = "base_url"
 )
 
 const (

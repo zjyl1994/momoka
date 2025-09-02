@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -58,14 +59,6 @@ func Startup() (err error) {
 		return err
 	}
 
-	hd := hashids.NewData()
-	hd.Salt = vars.Secret
-	hd.MinLength = 6
-	vars.HashID, err = hashids.NewWithData(hd)
-	if err != nil {
-		return err
-	}
-
 	vars.DataPath = os.Getenv("MOMOKA_DATA_PATH")
 	err = os.MkdirAll(vars.DataPath, 0755)
 	if err != nil {
@@ -100,6 +93,34 @@ func Startup() (err error) {
 	if err != nil {
 		return err
 	}
+
+	// init secret if not exists
+	secret, err := service.SettingService.Get(common.SETTING_KEY_SYSTEM_RAND_SECRET)
+	if err != nil {
+		return err
+	}
+	if secret == "" {
+		secret = utils.RandStr(32)
+		err = service.SettingService.Set(common.SETTING_KEY_SYSTEM_RAND_SECRET, secret)
+		if err != nil {
+			return err
+		}
+	}
+	vars.Secret = secret
+
+	hd := hashids.NewData()
+	hd.Salt = vars.Secret
+	hd.MinLength = 6
+	vars.HashID, err = hashids.NewWithData(hd)
+	if err != nil {
+		return err
+	}
+	// load base_url
+	baseURL, err := service.SettingService.Get(common.SETTING_KEY_BASE_URL)
+	if err != nil {
+		return err
+	}
+	vars.BaseURL = strings.TrimSuffix(baseURL, "/")
 
 	if vars.AutoCleanDays > 0 || vars.AutoCleanItems > 0 {
 		// 后台线程自动清理本地缓存
