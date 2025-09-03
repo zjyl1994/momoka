@@ -16,6 +16,8 @@ func ListSettingHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	delete(settingList, common.SETTING_KEY_ADMIN_PASSWORD)
+	delete(settingList, common.SETTING_KEY_SYSTEM_RAND_SECRET)
 	return c.JSON(settingList)
 }
 
@@ -36,6 +38,9 @@ func UpdateSettingHandler(c *fiber.Ctx) error {
 	}
 	if err := service.SettingService.BulkSet(req); err != nil {
 		return err
+	}
+	if _, ok := req[common.SETTING_KEY_BASE_URL]; ok {
+		vars.BaseURL = req[common.SETTING_KEY_BASE_URL]
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }

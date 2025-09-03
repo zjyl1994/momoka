@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { Card, Tabs } from 'antd';
-import { UserOutlined, InfoCircleOutlined, CloudServerOutlined } from '@ant-design/icons';
+import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined } from '@ant-design/icons';
 import UserManagement from './UserManagement';
 import SystemInfo from './SystemInfo';
 import BackupManagement from './BackupManagement';
+import BaseUrlSettings from './BaseUrlSettings';
 
 const Settings = () => {
   // Set page title
@@ -21,6 +22,16 @@ const Settings = () => {
         </span>
       ),
       children: <SystemInfo />
+    },
+    {
+      key: 'base-url-settings',
+      label: (
+        <span>
+          <LinkOutlined />
+          基础URL配置
+        </span>
+      ),
+      children: <BaseUrlSettings />
     },
     {
       key: 'user-management',
