@@ -1,16 +1,25 @@
 import React, { useEffect } from 'react';
 import { Card, Tabs } from 'antd';
 import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 import UserManagement from './UserManagement';
 import SystemInfo from './SystemInfo';
 import BackupManagement from './BackupManagement';
 import BaseUrlSettings from './BaseUrlSettings';
 
 const Settings = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'system-info';
+
   // Set page title
   useEffect(() => {
     document.title = '系统设置 - Momoka 图床';
   }, []);
+
+  // Handle tab change
+  const handleTabChange = (key) => {
+    setSearchParams({ tab: key });
+  };
 
   const tabItems = [
     {
@@ -58,7 +67,8 @@ const Settings = () => {
   return (
     <div style={{ padding: '24px' }}>
       <Tabs
-        defaultActiveKey="system-info"
+        activeKey={activeTab}
+        onChange={handleTabChange}
         items={tabItems}
         size="large"
         tabBarStyle={{ marginBottom: '24px' }}

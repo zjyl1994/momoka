@@ -64,7 +64,6 @@ const BaseUrlSettings = () => {
 
   return (
     <div style={{ maxWidth: 600 }}>
-      <Card title="基础URL配置" size="small">
         <Spin spinning={loading}>
           <Form
             form={form}
@@ -106,7 +105,6 @@ const BaseUrlSettings = () => {
             </Form.Item>
           </Form>
         </Spin>
-      </Card>
     </div>
   );
 };
