@@ -68,7 +68,53 @@ func (s *imageFolderService) Rename(id int64, name string) error {
 	return nil
 }
 
+// checkCircularReference 检查是否存在循环引用
+// 检查将 folderID 移动到 targetParentID 是否会产生循环引用
+func (s *imageFolderService) checkCircularReference(folderID int64, targetParentID int64) error {
+	// 检查是否移动到自身
+	if folderID == targetParentID {
+		return errors.New("cannot move folder to itself")
+	}
+
+	// 检查是否移动到子文件夹（防止循环引用）
+	if targetParentID != 0 {
+		currentParentID := targetParentID
+		for currentParentID != 0 {
+			folder, err := s.Get(currentParentID)
+			if err != nil {
+				return err
+			}
+			if folder == nil {
+				break
+			}
+			if folder.ID == folderID {
+				return errors.New("cannot move folder to its subfolder")
+			}
+			currentParentID = folder.ParentID
+		}
+	}
+
+	return nil
+}
+
 func (s *imageFolderService) Move(id int64, parentID int64) error {
+	// 检查目标文件夹是否存在
+	if parentID != 0 {
+		parent, err := s.Get(parentID)
+		if err != nil {
+			return err
+		}
+		if parent == nil {
+			return errors.New("target parent folder not found")
+		}
+	}
+
+	// 检查是否存在循环引用
+	if err := s.checkCircularReference(id, parentID); err != nil {
+		return err
+	}
+
+	// 执行移动操作
 	result := vars.Database.Model(&common.ImageFolder{}).Where("id = ?", id).Update("parent_id", parentID)
 	if result.Error != nil {
 		return result.Error
@@ -239,25 +285,8 @@ func (s *imageFolderService) BatchMove(ids []int64, parentID int64) error {
 
 	// 检查是否存在循环引用
 	for _, id := range ids {
-		if id == parentID {
-			return errors.New("cannot move folder to itself")
-		}
-		// 检查目标父文件夹是否是当前文件夹的子文件夹
-		if parentID != 0 {
-			currentParentID := parentID
-			for currentParentID != 0 {
-				folder, err := s.Get(currentParentID)
-				if err != nil {
-					return err
-				}
-				if folder == nil {
-					break
-				}
-				if folder.ID == id {
-					return errors.New("cannot move folder to its subfolder")
-				}
-				currentParentID = folder.ParentID
-			}
+		if err := s.checkCircularReference(id, parentID); err != nil {
+			return err
 		}
 	}
 
