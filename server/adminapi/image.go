@@ -281,3 +281,54 @@ func GetAllImageHandler(c *fiber.Ctx) error {
 		"total":  total,
 	})
 }
+
+func BatchDeleteImageHandler(c *fiber.Ctx) error {
+	var req struct {
+		IDs []int64 `json:"ids"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if len(req.IDs) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "ids is required",
+		})
+	}
+
+	err := service.ImageService.BatchDelete(c.Context(), req.IDs)
+	if err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func BatchMoveImageHandler(c *fiber.Ctx) error {
+	var req struct {
+		IDs      []int64 `json:"ids"`
+		FolderID int64   `json:"folder_id"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if len(req.IDs) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "ids is required",
+		})
+	}
+
+	err := service.ImageService.BatchMove(c.Context(), req.IDs, req.FolderID)
+	if err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

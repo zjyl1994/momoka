@@ -192,3 +192,74 @@ func (s *imageFolderService) GetFolderTree() ([]*common.FolderTree, error) {
 
 	return rootFolders, nil
 }
+
+// BatchDelete 批量删除文件夹
+func (s *imageFolderService) BatchDelete(ids []int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	// 检查是否包含根文件夹
+	for _, id := range ids {
+		if id == 0 {
+			return errors.New("Root folder cannot be deleted")
+		}
+	}
+
+	// 检查每个文件夹是否为空
+	for _, id := range ids {
+		folders, images, err := s.GetFolderContents(id)
+		if err != nil {
+			return err
+		}
+		if len(folders) > 0 || len(images) > 0 {
+			return errors.New("Cannot delete folder containing subfolders or images")
+		}
+	}
+
+	return vars.Database.Delete(&common.ImageFolder{}, ids).Error
+}
+
+// BatchMove 批量移动文件夹
+func (s *imageFolderService) BatchMove(ids []int64, parentID int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	// 检查目标父文件夹是否存在
+	if parentID != 0 {
+		parent, err := s.Get(parentID)
+		if err != nil {
+			return err
+		}
+		if parent == nil {
+			return errors.New("target parent folder not found")
+		}
+	}
+
+	// 检查是否存在循环引用
+	for _, id := range ids {
+		if id == parentID {
+			return errors.New("cannot move folder to itself")
+		}
+		// 检查目标父文件夹是否是当前文件夹的子文件夹
+		if parentID != 0 {
+			currentParentID := parentID
+			for currentParentID != 0 {
+				folder, err := s.Get(currentParentID)
+				if err != nil {
+					return err
+				}
+				if folder == nil {
+					break
+				}
+				if folder.ID == id {
+					return errors.New("cannot move folder to its subfolder")
+				}
+				currentParentID = folder.ParentID
+			}
+		}
+	}
+
+	return vars.Database.Model(&common.ImageFolder{}).Where("id IN ?", ids).Update("parent_id", parentID).Error
+}

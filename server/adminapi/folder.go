@@ -165,3 +165,54 @@ func GetFolderTreeHandler(c *fiber.Ctx) error {
 	}
 	return c.JSON(tree)
 }
+
+func BatchDeleteFolderHandler(c *fiber.Ctx) error {
+	var req struct {
+		IDs []int64 `json:"ids"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if len(req.IDs) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "ids is required",
+		})
+	}
+
+	err := service.ImageFolderService.BatchDelete(req.IDs)
+	if err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func BatchMoveFolderHandler(c *fiber.Ctx) error {
+	var req struct {
+		IDs      []int64 `json:"ids"`
+		ParentID int64   `json:"parent_id"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if len(req.IDs) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "ids is required",
+		})
+	}
+
+	err := service.ImageFolderService.BatchMove(req.IDs, req.ParentID)
+	if err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

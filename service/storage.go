@@ -180,7 +180,7 @@ func (s *storageService) DownloadToMem(ctx context.Context, remotePath string) (
 	return io.ReadAll(resp.Body)
 }
 
-func (s *storageService) DeleteKeys(ctx context.Context, remotePaths []string) ([]string, error) {
+func (s *storageService) DeleteObjs(ctx context.Context, remotePaths []string) ([]string, error) {
 	// 存储删除失败的key
 	var failedKeys []string
 
@@ -198,8 +198,6 @@ func (s *storageService) DeleteKeys(ctx context.Context, remotePaths []string) (
 		Bucket: aws.String(vars.S3Config.Bucket),
 		Delete: &types.Delete{
 			Objects: objects,
-			// 禁用静默模式，返回每个对象的删除结果
-			Quiet: aws.Bool(false),
 		},
 	}
 
