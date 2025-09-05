@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/zjyl1994/momoka/infra/common"
-	"github.com/zjyl1994/momoka/infra/vars"
 	"gorm.io/gorm"
 )
 
@@ -18,7 +17,7 @@ type fsPathService struct{
 var FSPathService = &fsPathService{}
 
 // Get 根据路径字符串获取路径信息
-func (s *fsPathService) Get(pathStr string) (*common.FSPath, error) {
+func (s *fsPathService) Get(db *gorm.DB, pathStr string) (*common.FSPath, error) {
 	if pathStr == "/" {
 		// 根路径特殊处理
 		return &common.FSPath{
@@ -48,7 +47,7 @@ func (s *fsPathService) Get(pathStr string) (*common.FSPath, error) {
 
 	for _, part := range pathParts {
 		var fsPath common.FSPath
-		if err := vars.Database.Where("parent_id = ? AND name = ?", currentParentID, part).First(&fsPath).Error; err != nil {
+		if err := db.Where("parent_id = ? AND name = ?", currentParentID, part).First(&fsPath).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, nil
 			}
@@ -82,7 +81,8 @@ func (s *fsPathService) parsePath(pathStr string) []string {
 }
 
 // Create 根据路径字符串创建新路径
-func (s *fsPathService) Create(pathStr string, entityType int32) error {
+// Create 创建路径
+func (s *fsPathService) Create(db *gorm.DB, pathStr string, entityType int32) error {
 	if pathStr == "/" {
 		return errors.New("root path already exists")
 	}
@@ -97,7 +97,7 @@ func (s *fsPathService) Create(pathStr string, entityType int32) error {
 	var parentID int64 = 0
 	if len(pathParts) > 1 {
 		parentPathStr := "/" + strings.Join(pathParts[:len(pathParts)-1], "/")
-		parentPath, err := s.Get(parentPathStr)
+		parentPath, err := s.Get(db, parentPathStr)
 		if err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ func (s *fsPathService) Create(pathStr string, entityType int32) error {
 	}
 
 	// 检查同级路径名称是否重复
-	if err := s.checkDuplicateName(vars.Database, parentID, pathParts[len(pathParts)-1], 0); err != nil {
+	if err := s.checkDuplicateName(db, parentID, pathParts[len(pathParts)-1], 0); err != nil {
 		return err
 	}
 
@@ -123,7 +123,7 @@ func (s *fsPathService) Create(pathStr string, entityType int32) error {
 		EntityType: entityType,
 	}
 
-	if err := vars.Database.Create(fsPath).Error; err != nil {
+	if err := db.Create(fsPath).Error; err != nil {
 		return err
 	}
 
@@ -150,18 +150,19 @@ func (s *fsPathService) checkDuplicateName(db *gorm.DB, parentID int64, name str
 }
 
 // Delete 批量删除路径
-func (s *fsPathService) Delete(pathStrs []string, recursive bool) error {
+// Delete 删除路径
+func (s *fsPathService) Delete(db *gorm.DB, pathStrs []string, recursive bool) error {
 	if len(pathStrs) == 0 {
 		return nil
 	}
 
-	return vars.Database.Transaction(func(tx *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
 		for _, pathStr := range pathStrs {
 			if pathStr == "/" {
 				return errors.New("root path cannot be deleted")
 			}
 
-			fsPath, err := s.Get(pathStr)
+			fsPath, err := s.Get(tx, pathStr)
 			if err != nil {
 				return err
 			}
@@ -198,7 +199,7 @@ func (s *fsPathService) Delete(pathStrs []string, recursive bool) error {
 
 // deleteRecursivelyInTx 在事务中递归删除路径及其所有子路径的内部方法
 func (s *fsPathService) deleteRecursivelyInTx(tx *gorm.DB, pathStr string) error {
-	fsPath, err := s.Get(pathStr)
+	fsPath, err := s.Get(tx, pathStr)
 	if err != nil {
 		return err
 	}
@@ -207,7 +208,7 @@ func (s *fsPathService) deleteRecursivelyInTx(tx *gorm.DB, pathStr string) error
 	}
 
 	// 获取所有子路径
-	children, err := s.GetChildren(pathStr)
+	children, err := s.GetChildren(tx, pathStr)
 	if err != nil {
 		return err
 	}
@@ -230,17 +231,17 @@ func (s *fsPathService) deleteRecursivelyInTx(tx *gorm.DB, pathStr string) error
 	return tx.Delete(&common.FSPath{}, fsPath.ID).Error
 }
 
-// Move 批量移动路径到新的父路径下
-func (s *fsPathService) Move(pathStrs []string, newParentPathStr string) error {
+// Move 移动路径
+func (s *fsPathService) Move(db *gorm.DB, pathStrs []string, newParentPathStr string) error {
 	if len(pathStrs) == 0 {
 		return nil
 	}
 
-	return vars.Database.Transaction(func(tx *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取目标父路径信息
 		var newParentID int64 = 0
 		if newParentPathStr != "/" {
-			newParent, err := s.Get(newParentPathStr)
+			newParent, err := s.Get(tx, newParentPathStr)
 			if err != nil {
 				return err
 			}
@@ -261,7 +262,7 @@ func (s *fsPathService) Move(pathStrs []string, newParentPathStr string) error {
 			}
 
 			// 获取源路径
-			sourcePath, err := s.Get(pathStr)
+			sourcePath, err := s.Get(tx, pathStr)
 			if err != nil {
 				return err
 			}
@@ -271,7 +272,7 @@ func (s *fsPathService) Move(pathStrs []string, newParentPathStr string) error {
 
 			// 检查循环引用
 			if newParentID != 0 {
-				if err := s.checkCircularReference(sourcePath.ID, newParentID); err != nil {
+				if err := s.checkCircularReference(tx, sourcePath.ID, newParentID); err != nil {
 					return err
 				}
 			}
@@ -295,12 +296,13 @@ func (s *fsPathService) Move(pathStrs []string, newParentPathStr string) error {
 }
 
 // Rename 根据路径字符串重命名路径
-func (s *fsPathService) Rename(pathStr string, newName string) error {
+// Rename 重命名路径
+func (s *fsPathService) Rename(db *gorm.DB, pathStr string, newName string) error {
 	if pathStr == "/" {
 		return errors.New("root path cannot be renamed")
 	}
 
-	fsPath, err := s.Get(pathStr)
+	fsPath, err := s.Get(db, pathStr)
 	if err != nil {
 		return err
 	}
@@ -309,12 +311,12 @@ func (s *fsPathService) Rename(pathStr string, newName string) error {
 	}
 
 	// 检查同级是否已有同名路径
-	if err := s.checkDuplicateName(vars.Database, fsPath.ParentID, newName, fsPath.ID); err != nil {
+	if err := s.checkDuplicateName(db, fsPath.ParentID, newName, fsPath.ID); err != nil {
 		return err
 	}
 
 	// 更新名称
-	if err := vars.Database.Model(&common.FSPath{}).Where("id = ?", fsPath.ID).Update("name", newName).Error; err != nil {
+	if err := db.Model(&common.FSPath{}).Where("id = ?", fsPath.ID).Update("name", newName).Error; err != nil {
 		return err
 	}
 
@@ -324,15 +326,15 @@ func (s *fsPathService) Rename(pathStr string, newName string) error {
 	return nil
 }
 
-// checkCircularReference 检查是否会形成循环引用
-func (s *fsPathService) checkCircularReference(pathID int64, targetParentID int64) error {
+// checkCircularReference 检查是否存在循环引用
+func (s *fsPathService) checkCircularReference(db *gorm.DB, pathID int64, targetParentID int64) error {
 	current := targetParentID
 	for current != 0 {
 		if current == pathID {
 			return errors.New("circular reference detected")
 		}
 		var path common.FSPath
-		if err := vars.Database.Where("id = ?", current).First(&path).Error; err != nil {
+		if err := db.Where("id = ?", current).First(&path).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				break
 			}
@@ -344,10 +346,11 @@ func (s *fsPathService) checkCircularReference(pathID int64, targetParentID int6
 }
 
 // GetChildren 根据路径字符串获取指定路径的所有直接子路径
-func (s *fsPathService) GetChildren(pathStr string) ([]*common.FSPath, error) {
+// GetChildren 获取指定路径下的所有子路径
+func (s *fsPathService) GetChildren(db *gorm.DB, pathStr string) ([]*common.FSPath, error) {
 	var parentID int64 = 0
 	if pathStr != "/" {
-		parentPath, err := s.Get(pathStr)
+		parentPath, err := s.Get(db, pathStr)
 		if err != nil {
 			return nil, err
 		}
@@ -358,7 +361,7 @@ func (s *fsPathService) GetChildren(pathStr string) ([]*common.FSPath, error) {
 	}
 
 	var children []*common.FSPath
-	if err := vars.Database.Where("parent_id = ?", parentID).Find(&children).Error; err != nil {
+	if err := db.Where("parent_id = ?", parentID).Find(&children).Error; err != nil {
 		return nil, err
 	}
 	return children, nil
@@ -382,13 +385,14 @@ func (s *fsPathService) invalidateCacheRecursively(pathStr string) {
 }
 
 // Mkdir 递归创建目录路径，类似 mkdir -p 行为
-func (s *fsPathService) Mkdir(pathStr string) error {
+// Mkdir 创建目录
+func (s *fsPathService) Mkdir(db *gorm.DB, pathStr string) error {
 	if pathStr == "/" {
 		return nil // 根路径已存在
 	}
 
 	// 检查路径是否已存在
-	existingPath, err := s.Get(pathStr)
+	existingPath, err := s.Get(db, pathStr)
 	if err != nil {
 		return err
 	}
@@ -415,14 +419,15 @@ func (s *fsPathService) Mkdir(pathStr string) error {
 		}
 
 		// 检查当前级别是否存在
-		currentFSPath, err := s.Get(currentPath)
+		currentFSPath, err := s.Get(db, currentPath)
 		if err != nil {
 			return err
 		}
 
 		if currentFSPath == nil {
 			// 当前级别不存在，创建它
-			if err := s.Create(currentPath, common.ENTITY_TYPE_FOLDER); err != nil {
+			err := s.Create(db, currentPath, common.ENTITY_TYPE_FOLDER)
+			if err != nil {
 				return err
 			}
 		} else if currentFSPath.EntityType != common.ENTITY_TYPE_FOLDER {

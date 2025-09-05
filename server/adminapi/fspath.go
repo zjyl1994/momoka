@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
+	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/service"
 )
 
@@ -16,7 +17,7 @@ func GetFSPathHandler(c *fiber.Ctx) error {
 		pathStr = "/" + pathStr // 添加前导斜杠
 	}
 
-	fsPath, err := service.FSPathService.Get(pathStr)
+	fsPath, err := service.FSPathService.Get(vars.Database, pathStr)
 	if err != nil {
 		logrus.Errorf("Get FSPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -61,7 +62,7 @@ func CreateFSPathHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	err := service.FSPathService.Create(pathStr, req.EntityType)
+	err := service.FSPathService.Create(vars.Database, pathStr, req.EntityType)
 	if err != nil {
 		logrus.Errorf("Create FSPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -84,7 +85,7 @@ func DeleteFSPathHandler(c *fiber.Ctx) error {
 	}
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	err := service.FSPathService.Delete([]string{pathStr}, recursive)
+	err := service.FSPathService.Delete(vars.Database, []string{pathStr}, recursive)
 	if err != nil {
 		logrus.Errorf("Delete FSPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -112,7 +113,7 @@ func MoveFSPathHandler(c *fiber.Ctx) error {
 	}
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	err := service.FSPathService.Move([]string{pathStr}, newPath)
+	err := service.FSPathService.Move(vars.Database, []string{pathStr}, newPath)
 	if err != nil {
 		logrus.Errorf("Move FSPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -140,7 +141,7 @@ func RenameFSPathHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	err := service.FSPathService.Rename(pathStr, newName)
+	err := service.FSPathService.Rename(vars.Database, pathStr, newName)
 	if err != nil {
 		logrus.Errorf("Rename FSPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -156,7 +157,7 @@ func GetFSPathChildrenHandler(c *fiber.Ctx) error {
 	pathStr := c.Params("path")
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	children, err := service.FSPathService.GetChildren(pathStr)
+	children, err := service.FSPathService.GetChildren(vars.Database, pathStr)
 	if err != nil {
 		logrus.Errorf("GetChildren failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -179,7 +180,7 @@ func MkdirFSPathHandler(c *fiber.Ctx) error {
 	}
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	err := service.FSPathService.Mkdir(pathStr)
+	err := service.FSPathService.Mkdir(vars.Database, pathStr)
 	if err != nil {
 		logrus.Errorf("Mkdir failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
