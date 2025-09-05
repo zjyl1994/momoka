@@ -8,8 +8,8 @@ import (
 	"github.com/zjyl1994/momoka/service"
 )
 
-// GetFSPathHandler 根据路径字符串获取路径信息
-func GetFSPathHandler(c *fiber.Ctx) error {
+// GetLogicPathHandler 根据路径字符串获取路径信息
+func GetLogicPathHandler(c *fiber.Ctx) error {
 	pathStr := c.Params("path")
 	if pathStr == "" {
 		pathStr = "/" // 默认为根路径
@@ -17,9 +17,9 @@ func GetFSPathHandler(c *fiber.Ctx) error {
 		pathStr = "/" + pathStr // 添加前导斜杠
 	}
 
-	fsPath, err := service.FSPathService.Get(vars.Database, pathStr)
+	fsPath, err := service.LogicPathService.Get(vars.Database, pathStr)
 	if err != nil {
-		logrus.Errorf("Get FSPath failed, err: %v", err)
+		logrus.Errorf("Get LogicPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "get path failed",
 		})
@@ -34,9 +34,9 @@ func GetFSPathHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fsPath)
 }
 
-// CreateFSPathHandler 创建新路径
-func CreateFSPathHandler(c *fiber.Ctx) error {
-	type CreateFSPathReq struct {
+// CreateLogicPathHandler 创建新路径
+func CreateLogicPathHandler(c *fiber.Ctx) error {
+	type CreateLogicPathReq struct {
 		EntityType int32 `json:"entity_type"`
 	}
 
@@ -48,7 +48,7 @@ func CreateFSPathHandler(c *fiber.Ctx) error {
 	}
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	var req CreateFSPathReq
+	var req CreateLogicPathReq
 	if err := c.BodyParser(&req); err != nil {
 		logrus.Errorf("BodyParser failed, err: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -62,9 +62,9 @@ func CreateFSPathHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	err := service.FSPathService.Create(vars.Database, pathStr, req.EntityType)
+	err := service.LogicPathService.Create(vars.Database, pathStr, req.EntityType)
 	if err != nil {
-		logrus.Errorf("Create FSPath failed, err: %v", err)
+		logrus.Errorf("Create LogicPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "create path failed",
 		})
@@ -73,8 +73,8 @@ func CreateFSPathHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusCreated)
 }
 
-// DeleteFSPathHandler 删除路径
-func DeleteFSPathHandler(c *fiber.Ctx) error {
+// DeleteLogicPathHandler 删除路径
+func DeleteLogicPathHandler(c *fiber.Ctx) error {
 	recursive := c.QueryBool("recursive")
 
 	pathStr := c.Params("path")
@@ -85,9 +85,9 @@ func DeleteFSPathHandler(c *fiber.Ctx) error {
 	}
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	err := service.FSPathService.Delete(vars.Database, []string{pathStr}, recursive)
+	err := service.LogicPathService.Delete(vars.Database, []string{pathStr}, recursive)
 	if err != nil {
-		logrus.Errorf("Delete FSPath failed, err: %v", err)
+		logrus.Errorf("Delete LogicPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "delete paths failed",
 		})
@@ -96,8 +96,8 @@ func DeleteFSPathHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// MoveFSPathHandler 移动路径
-func MoveFSPathHandler(c *fiber.Ctx) error {
+// MoveLogicPathHandler 移动路径
+func MoveLogicPathHandler(c *fiber.Ctx) error {
 	newPath := c.Query("new_path")
 	if newPath == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -113,9 +113,9 @@ func MoveFSPathHandler(c *fiber.Ctx) error {
 	}
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	err := service.FSPathService.Move(vars.Database, []string{pathStr}, newPath)
+	err := service.LogicPathService.Move(vars.Database, []string{pathStr}, newPath)
 	if err != nil {
-		logrus.Errorf("Move FSPath failed, err: %v", err)
+		logrus.Errorf("Move LogicPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "move paths failed",
 		})
@@ -124,8 +124,8 @@ func MoveFSPathHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// RenameFSPathHandler 重命名路径
-func RenameFSPathHandler(c *fiber.Ctx) error {
+// RenameLogicPathHandler 重命名路径
+func RenameLogicPathHandler(c *fiber.Ctx) error {
 	pathStr := c.Params("path")
 	if pathStr == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -141,9 +141,9 @@ func RenameFSPathHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	err := service.FSPathService.Rename(vars.Database, pathStr, newName)
+	err := service.LogicPathService.Rename(vars.Database, pathStr, newName)
 	if err != nil {
-		logrus.Errorf("Rename FSPath failed, err: %v", err)
+		logrus.Errorf("Rename LogicPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "rename path failed",
 		})
@@ -152,12 +152,12 @@ func RenameFSPathHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// GetFSPathChildrenHandler 获取指定路径的子路径
-func GetFSPathChildrenHandler(c *fiber.Ctx) error {
+// GetLogicPathChildrenHandler 获取指定路径的子路径
+func GetLogicPathChildrenHandler(c *fiber.Ctx) error {
 	pathStr := c.Params("path")
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	children, err := service.FSPathService.GetChildren(vars.Database, pathStr)
+	children, err := service.LogicPathService.GetChildren(vars.Database, pathStr)
 	if err != nil {
 		logrus.Errorf("GetChildren failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -170,8 +170,8 @@ func GetFSPathChildrenHandler(c *fiber.Ctx) error {
 	})
 }
 
-// MkdirFSPathHandler 递归创建目录路径
-func MkdirFSPathHandler(c *fiber.Ctx) error {
+// MkdirLogicPathHandler 递归创建目录路径
+func MkdirLogicPathHandler(c *fiber.Ctx) error {
 	pathStr := c.Params("path")
 	if pathStr == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -180,7 +180,7 @@ func MkdirFSPathHandler(c *fiber.Ctx) error {
 	}
 	pathStr = "/" + pathStr // 添加前导斜杠
 
-	err := service.FSPathService.Mkdir(vars.Database, pathStr)
+	err := service.LogicPathService.Mkdir(vars.Database, pathStr)
 	if err != nil {
 		logrus.Errorf("Mkdir failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

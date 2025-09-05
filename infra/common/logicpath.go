@@ -1,6 +1,6 @@
 package common
 
-type FSPath struct {
+type LogicPath struct {
 	ID         int64  `json:"id"`
 	ParentID   int64  `gorm:"default:0;uniqueIndex:idx_parent_name" json:"parent_id"`
 	Name       string `gorm:"uniqueIndex:idx_parent_name" json:"name"`
@@ -9,6 +9,6 @@ type FSPath struct {
 	UpdateTime int64  `gorm:"autoUpdateTime" json:"update_time"`
 }
 
-func (f *FSPath) TableName() string {
-	return "fs_path"
+func (f *LogicPath) TableName() string {
+	return "logic_path"
 }

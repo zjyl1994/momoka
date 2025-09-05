@@ -9,18 +9,18 @@ import (
 	"gorm.io/gorm"
 )
 
-type fsPathService struct{
-	// pathCache 缓存路径信息，key为路径字符串，value为*common.FSPath
+type logicPathService struct {
+	// pathCache 缓存路径信息，key为路径字符串，value为*common.LogicPath
 	pathCache sync.Map
 }
 
-var FSPathService = &fsPathService{}
+var LogicPathService = &logicPathService{}
 
 // Get 根据路径字符串获取路径信息
-func (s *fsPathService) Get(db *gorm.DB, pathStr string) (*common.FSPath, error) {
+func (s *logicPathService) Get(db *gorm.DB, pathStr string) (*common.LogicPath, error) {
 	if pathStr == "/" {
 		// 根路径特殊处理
-		return &common.FSPath{
+		return &common.LogicPath{
 			ID:         0,
 			ParentID:   0,
 			Name:       "/",
@@ -30,7 +30,7 @@ func (s *fsPathService) Get(db *gorm.DB, pathStr string) (*common.FSPath, error)
 
 	// 先从缓存中查找
 	if cached, ok := s.pathCache.Load(pathStr); ok {
-		if fsPath, ok := cached.(*common.FSPath); ok {
+		if fsPath, ok := cached.(*common.LogicPath); ok {
 			return fsPath, nil
 		}
 	}
@@ -43,10 +43,10 @@ func (s *fsPathService) Get(db *gorm.DB, pathStr string) (*common.FSPath, error)
 
 	// 从根开始逐级查找
 	currentParentID := int64(0)
-	var currentPath *common.FSPath
+	var currentPath *common.LogicPath
 
 	for _, part := range pathParts {
-		var fsPath common.FSPath
+		var fsPath common.LogicPath
 		if err := db.Where("parent_id = ? AND name = ?", currentParentID, part).First(&fsPath).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, nil
@@ -66,7 +66,7 @@ func (s *fsPathService) Get(db *gorm.DB, pathStr string) (*common.FSPath, error)
 }
 
 // parsePath 解析路径字符串为路径组件数组
-func (s *fsPathService) parsePath(pathStr string) []string {
+func (s *logicPathService) parsePath(pathStr string) []string {
 	if pathStr == "/" {
 		return []string{}
 	}
@@ -82,7 +82,7 @@ func (s *fsPathService) parsePath(pathStr string) []string {
 
 // Create 根据路径字符串创建新路径
 // Create 创建路径
-func (s *fsPathService) Create(db *gorm.DB, pathStr string, entityType int32) error {
+func (s *logicPathService) Create(db *gorm.DB, pathStr string, entityType int32) error {
 	if pathStr == "/" {
 		return errors.New("root path already exists")
 	}
@@ -117,7 +117,7 @@ func (s *fsPathService) Create(db *gorm.DB, pathStr string, entityType int32) er
 	}
 
 	// 创建路径
-	fsPath := &common.FSPath{
+	fsPath := &common.LogicPath{
 		ParentID:   parentID,
 		Name:       pathParts[len(pathParts)-1],
 		EntityType: entityType,
@@ -134,9 +134,9 @@ func (s *fsPathService) Create(db *gorm.DB, pathStr string, entityType int32) er
 }
 
 // checkDuplicateName 检查同级路径名称是否重复
-func (s *fsPathService) checkDuplicateName(db *gorm.DB, parentID int64, name string, excludeID int64) error {
+func (s *logicPathService) checkDuplicateName(db *gorm.DB, parentID int64, name string, excludeID int64) error {
 	var count int64
-	query := db.Model(&common.FSPath{}).Where("parent_id = ? AND name = ?", parentID, name)
+	query := db.Model(&common.LogicPath{}).Where("parent_id = ? AND name = ?", parentID, name)
 	if excludeID > 0 {
 		query = query.Where("id != ?", excludeID)
 	}
@@ -151,7 +151,7 @@ func (s *fsPathService) checkDuplicateName(db *gorm.DB, parentID int64, name str
 
 // Delete 批量删除路径
 // Delete 删除路径
-func (s *fsPathService) Delete(db *gorm.DB, pathStrs []string, recursive bool) error {
+func (s *logicPathService) Delete(db *gorm.DB, pathStrs []string, recursive bool) error {
 	if len(pathStrs) == 0 {
 		return nil
 	}
@@ -180,13 +180,13 @@ func (s *fsPathService) Delete(db *gorm.DB, pathStrs []string, recursive bool) e
 			} else {
 				// 非递归删除，检查是否有子路径
 				var count int64
-				if err := tx.Model(&common.FSPath{}).Where("parent_id = ?", fsPath.ID).Count(&count).Error; err != nil {
+				if err := tx.Model(&common.LogicPath{}).Where("parent_id = ?", fsPath.ID).Count(&count).Error; err != nil {
 					return err
 				}
 				if count > 0 {
 					return errors.New("cannot delete path with children: " + pathStr)
 				}
-				if err := tx.Delete(&common.FSPath{}, fsPath.ID).Error; err != nil {
+				if err := tx.Delete(&common.LogicPath{}, fsPath.ID).Error; err != nil {
 					return err
 				}
 				// 清除缓存
@@ -198,7 +198,7 @@ func (s *fsPathService) Delete(db *gorm.DB, pathStrs []string, recursive bool) e
 }
 
 // deleteRecursivelyInTx 在事务中递归删除路径及其所有子路径的内部方法
-func (s *fsPathService) deleteRecursivelyInTx(tx *gorm.DB, pathStr string) error {
+func (s *logicPathService) deleteRecursivelyInTx(tx *gorm.DB, pathStr string) error {
 	fsPath, err := s.Get(tx, pathStr)
 	if err != nil {
 		return err
@@ -228,11 +228,11 @@ func (s *fsPathService) deleteRecursivelyInTx(tx *gorm.DB, pathStr string) error
 	}
 
 	// 删除当前路径
-	return tx.Delete(&common.FSPath{}, fsPath.ID).Error
+	return tx.Delete(&common.LogicPath{}, fsPath.ID).Error
 }
 
 // Move 移动路径
-func (s *fsPathService) Move(db *gorm.DB, pathStrs []string, newParentPathStr string) error {
+func (s *logicPathService) Move(db *gorm.DB, pathStrs []string, newParentPathStr string) error {
 	if len(pathStrs) == 0 {
 		return nil
 	}
@@ -283,7 +283,7 @@ func (s *fsPathService) Move(db *gorm.DB, pathStrs []string, newParentPathStr st
 			}
 
 			// 更新父路径ID
-			if err := tx.Model(&common.FSPath{}).Where("id = ?", sourcePath.ID).Update("parent_id", newParentID).Error; err != nil {
+			if err := tx.Model(&common.LogicPath{}).Where("id = ?", sourcePath.ID).Update("parent_id", newParentID).Error; err != nil {
 				return err
 			}
 
@@ -297,7 +297,7 @@ func (s *fsPathService) Move(db *gorm.DB, pathStrs []string, newParentPathStr st
 
 // Rename 根据路径字符串重命名路径
 // Rename 重命名路径
-func (s *fsPathService) Rename(db *gorm.DB, pathStr string, newName string) error {
+func (s *logicPathService) Rename(db *gorm.DB, pathStr string, newName string) error {
 	if pathStr == "/" {
 		return errors.New("root path cannot be renamed")
 	}
@@ -316,7 +316,7 @@ func (s *fsPathService) Rename(db *gorm.DB, pathStr string, newName string) erro
 	}
 
 	// 更新名称
-	if err := db.Model(&common.FSPath{}).Where("id = ?", fsPath.ID).Update("name", newName).Error; err != nil {
+	if err := db.Model(&common.LogicPath{}).Where("id = ?", fsPath.ID).Update("name", newName).Error; err != nil {
 		return err
 	}
 
@@ -327,13 +327,13 @@ func (s *fsPathService) Rename(db *gorm.DB, pathStr string, newName string) erro
 }
 
 // checkCircularReference 检查是否存在循环引用
-func (s *fsPathService) checkCircularReference(db *gorm.DB, pathID int64, targetParentID int64) error {
+func (s *logicPathService) checkCircularReference(db *gorm.DB, pathID int64, targetParentID int64) error {
 	current := targetParentID
 	for current != 0 {
 		if current == pathID {
 			return errors.New("circular reference detected")
 		}
-		var path common.FSPath
+		var path common.LogicPath
 		if err := db.Where("id = ?", current).First(&path).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				break
@@ -347,7 +347,7 @@ func (s *fsPathService) checkCircularReference(db *gorm.DB, pathID int64, target
 
 // GetChildren 根据路径字符串获取指定路径的所有直接子路径
 // GetChildren 获取指定路径下的所有子路径
-func (s *fsPathService) GetChildren(db *gorm.DB, pathStr string) ([]*common.FSPath, error) {
+func (s *logicPathService) GetChildren(db *gorm.DB, pathStr string) ([]*common.LogicPath, error) {
 	var parentID int64 = 0
 	if pathStr != "/" {
 		parentPath, err := s.Get(db, pathStr)
@@ -360,7 +360,7 @@ func (s *fsPathService) GetChildren(db *gorm.DB, pathStr string) ([]*common.FSPa
 		parentID = parentPath.ID
 	}
 
-	var children []*common.FSPath
+	var children []*common.LogicPath
 	if err := db.Where("parent_id = ?", parentID).Find(&children).Error; err != nil {
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func (s *fsPathService) GetChildren(db *gorm.DB, pathStr string) ([]*common.FSPa
 }
 
 // invalidateCacheRecursively 递归清除指定路径及其所有子路径的缓存
-func (s *fsPathService) invalidateCacheRecursively(pathStr string) {
+func (s *logicPathService) invalidateCacheRecursively(pathStr string) {
 	// 清除当前路径缓存
 	s.pathCache.Delete(pathStr)
 
@@ -386,7 +386,7 @@ func (s *fsPathService) invalidateCacheRecursively(pathStr string) {
 
 // Mkdir 递归创建目录路径，类似 mkdir -p 行为
 // Mkdir 创建目录
-func (s *fsPathService) Mkdir(db *gorm.DB, pathStr string) error {
+func (s *logicPathService) Mkdir(db *gorm.DB, pathStr string) error {
 	if pathStr == "/" {
 		return nil // 根路径已存在
 	}

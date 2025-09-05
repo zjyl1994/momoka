@@ -78,13 +78,13 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/backup", adminapi.ListBackupHandler)
 	adminAPI.Delete("/backup", adminapi.DeleteBackupHandler)
 	// 路径管理相关路由
-	adminAPI.Get("/files/:path*/children", adminapi.GetFSPathChildrenHandler)
-	adminAPI.Post("/files/:path*/mkdir", adminapi.MkdirFSPathHandler)
-	adminAPI.Patch("/files/:path*/move", adminapi.MoveFSPathHandler)
-	adminAPI.Patch("/files/:path*/rename", adminapi.RenameFSPathHandler)
-	adminAPI.Get("/files/:path*", adminapi.GetFSPathHandler)
-	adminAPI.Post("/files/:path*", adminapi.CreateFSPathHandler)
-	adminAPI.Delete("/files/:path*", adminapi.DeleteFSPathHandler)
+	adminAPI.Get("/files/:path*/children", adminapi.GetLogicPathChildrenHandler)
+	adminAPI.Post("/files/:path*/mkdir", adminapi.MkdirLogicPathHandler)
+	adminAPI.Patch("/files/:path*/move", adminapi.MoveLogicPathHandler)
+	adminAPI.Patch("/files/:path*/rename", adminapi.RenameLogicPathHandler)
+	adminAPI.Get("/files/:path*", adminapi.GetLogicPathHandler)
+	adminAPI.Post("/files/:path*", adminapi.CreateLogicPathHandler)
+	adminAPI.Delete("/files/:path*", adminapi.DeleteLogicPathHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,

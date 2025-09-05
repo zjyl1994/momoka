@@ -77,7 +77,7 @@ func Startup() (err error) {
 		return err
 	}
 
-	err = vars.Database.AutoMigrate(&common.Image{}, &common.ImageFolder{}, &common.Setting{}, &common.FSPath{})
+	err = vars.Database.AutoMigrate(&common.Image{}, &common.ImageFolder{}, &common.Setting{}, &common.LogicPath{})
 	if err != nil {
 		return err
 	}
