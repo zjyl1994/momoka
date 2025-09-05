@@ -283,23 +283,37 @@ func GetAllImageHandler(c *fiber.Ctx) error {
 }
 
 func BatchDeleteImageHandler(c *fiber.Ctx) error {
-	var req struct {
-		IDs []int64 `json:"ids"`
-	}
-
-	if err := c.BodyParser(&req); err != nil {
+	idsParam := c.Query("ids")
+	if idsParam == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": "ids parameter is required",
 		})
 	}
 
-	if len(req.IDs) == 0 {
+	// Parse comma-separated IDs
+	idStrs := strings.Split(idsParam, ",")
+	var ids []int64
+	for _, idStr := range idStrs {
+		idStr = strings.TrimSpace(idStr)
+		if idStr == "" {
+			continue
+		}
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid ID format: " + idStr,
+			})
+		}
+		ids = append(ids, id)
+	}
+
+	if len(ids) == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "ids is required",
+			"error": "At least one valid ID is required",
 		})
 	}
 
-	err := service.ImageService.BatchDelete(c.Context(), req.IDs)
+	err := service.ImageService.BatchDelete(c.Context(), ids)
 	if err != nil {
 		return err
 	}

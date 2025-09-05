@@ -206,33 +206,61 @@ const FileManager = () => {
 
   // 执行批量删除
    const performBatchDelete = async () => {
-     let successCount = 0;
-     let failCount = 0;
+     // 按类型分组
+     const imageItems = selectedItems.filter(item => item.type === 'image');
+     const folderItems = selectedItems.filter(item => item.type === 'folder');
+     
+     let totalSuccess = 0;
+     let totalFail = 0;
      const errors = [];
 
-     for (const item of selectedItems) {
+     // 批量删除图片
+     if (imageItems.length > 0) {
        try {
-         const endpoint = item.type === 'folder' ? '/admin-api/folder' : '/admin-api/image';
-         const response = await authFetch(`${endpoint}?id=${item.id}`, {
+         const imageIds = imageItems.map(item => item.id);
+         const idsParam = imageIds.join(',');
+         const response = await authFetch(`/admin-api/image/batch?ids=${encodeURIComponent(idsParam)}`, {
            method: 'DELETE'
          });
          
          if (response.ok) {
-           successCount++;
+           totalSuccess += imageItems.length;
          } else {
-           failCount++;
+           totalFail += imageItems.length;
            const errorData = await response.json().catch(() => ({}));
-           errors.push(`${item.name}: ${errorData.error || '删除失败'}`);
+           errors.push(`图片批量删除失败: ${errorData.error || '未知错误'}`);
          }
        } catch (error) {
-         failCount++;
-         errors.push(`${item.name}: ${error.message}`);
+         totalFail += imageItems.length;
+         errors.push(`图片批量删除失败: ${error.message}`);
+       }
+     }
+
+     // 批量删除文件夹
+     if (folderItems.length > 0) {
+       try {
+         const folderIds = folderItems.map(item => item.id);
+         const idsParam = folderIds.join(',');
+         const response = await authFetch(`/admin-api/folder/batch?ids=${encodeURIComponent(idsParam)}`, {
+           method: 'DELETE'
+         });
+         
+         if (response.ok) {
+           totalSuccess += folderItems.length;
+         } else {
+           totalFail += folderItems.length;
+           const errorData = await response.json().catch(() => ({}));
+           errors.push(`文件夹批量删除失败: ${errorData.error || '未知错误'}`);
+         }
+       } catch (error) {
+         totalFail += folderItems.length;
+         errors.push(`文件夹批量删除失败: ${error.message}`);
        }
      }
 
      // 显示结果
-     if (successCount > 0) {
-       message.success(`成功删除 ${successCount} 个项目`);
+     if (totalSuccess > 0) {
+       message.success(`成功删除 ${totalSuccess} 个项目`);
        // 刷新文件列表
        handleFolderUpdate();
        handleImageUpdate();
@@ -242,8 +270,8 @@ const FileManager = () => {
        window.location.reload();
      }
      
-     if (failCount > 0) {
-       message.error(`${failCount} 个项目删除失败`);
+     if (totalFail > 0) {
+       message.error(`${totalFail} 个项目删除失败`);
        if (errors.length > 0) {
          console.error('删除错误详情:', errors);
        }
@@ -267,41 +295,73 @@ const FileManager = () => {
         return;
       }
 
-      let successCount = 0;
-      let failCount = 0;
+      // 按类型分组
+      const imageItems = selectedItems.filter(item => item.type === 'image');
+      const folderItems = selectedItems.filter(item => item.type === 'folder');
+      
+      let totalSuccess = 0;
+      let totalFail = 0;
       const errors = [];
 
-      for (const item of selectedItems) {
+      // 批量移动图片
+      if (imageItems.length > 0) {
         try {
-          const endpoint = item.type === 'folder' ? '/admin-api/folder' : '/admin-api/image';
-          const bodyField = item.type === 'folder' ? 'parent_id' : 'folder_id';
-          
-          const response = await authFetch(`${endpoint}?id=${item.id}`, {
+          const imageIds = imageItems.map(item => item.id);
+          const response = await authFetch('/admin-api/image/batch', {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              [bodyField]: batchMoveTargetFolderId
+              ids: imageIds,
+              folder_id: batchMoveTargetFolderId
             })
           });
           
           if (response.ok) {
-            successCount++;
+            totalSuccess += imageItems.length;
           } else {
-            failCount++;
+            totalFail += imageItems.length;
             const errorData = await response.json().catch(() => ({}));
-            errors.push(`${item.name}: ${errorData.error || '移动失败'}`);
+            errors.push(`图片批量移动失败: ${errorData.error || '未知错误'}`);
           }
         } catch (error) {
-          failCount++;
-          errors.push(`${item.name}: ${error.message}`);
+          totalFail += imageItems.length;
+          errors.push(`图片批量移动失败: ${error.message}`);
+        }
+      }
+
+      // 批量移动文件夹
+      if (folderItems.length > 0) {
+        try {
+          const folderIds = folderItems.map(item => item.id);
+          const response = await authFetch('/admin-api/folder/batch', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ids: folderIds,
+              parent_id: batchMoveTargetFolderId
+            })
+          });
+          
+          if (response.ok) {
+            totalSuccess += folderItems.length;
+          } else {
+            totalFail += folderItems.length;
+            const errorData = await response.json().catch(() => ({}));
+            errors.push(`文件夹批量移动失败: ${errorData.error || '未知错误'}`);
+          }
+        } catch (error) {
+          totalFail += folderItems.length;
+          errors.push(`文件夹批量移动失败: ${error.message}`);
         }
       }
 
       // 显示结果
-      if (successCount > 0) {
-        message.success(`成功移动 ${successCount} 个项目`);
+      if (totalSuccess > 0) {
+        message.success(`成功移动 ${totalSuccess} 个项目`);
         // 刷新文件列表
         handleFolderUpdate();
         handleImageUpdate();
@@ -314,8 +374,8 @@ const FileManager = () => {
         window.location.reload();
       }
       
-      if (failCount > 0) {
-        message.error(`${failCount} 个项目移动失败`);
+      if (totalFail > 0) {
+        message.error(`${totalFail} 个项目移动失败`);
         if (errors.length > 0) {
           console.error('移动错误详情:', errors);
         }
