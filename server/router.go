@@ -29,7 +29,6 @@ func Run(listenAddr string) error {
 
 	apiGroup := app.Group("/api")
 	apiGroup.Get("/bing", api.GetBingTodayImageHandler)
-	apiGroup.Get("/masonry", api.GetMasonryImageHandler)
 	apiGroup.Post("/login", limiter.New(limiter.Config{
 		Max:        15, // 每个 IP 每分钟最多 15 次请求
 		Expiration: time.Minute,
@@ -78,6 +77,14 @@ func Run(listenAddr string) error {
 	adminAPI.Post("/backup/restore", adminapi.RestoreBackupHandler)
 	adminAPI.Get("/backup", adminapi.ListBackupHandler)
 	adminAPI.Delete("/backup", adminapi.DeleteBackupHandler)
+	// 路径管理相关路由
+	adminAPI.Get("/files/:path*/children", adminapi.GetFSPathChildrenHandler)
+	adminAPI.Post("/files/:path*/mkdir", adminapi.MkdirFSPathHandler)
+	adminAPI.Patch("/files/:path*/move", adminapi.MoveFSPathHandler)
+	adminAPI.Patch("/files/:path*/rename", adminapi.RenameFSPathHandler)
+	adminAPI.Get("/files/:path*", adminapi.GetFSPathHandler)
+	adminAPI.Post("/files/:path*", adminapi.CreateFSPathHandler)
+	adminAPI.Delete("/files/:path*", adminapi.DeleteFSPathHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,
