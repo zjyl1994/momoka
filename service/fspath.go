@@ -3,13 +3,17 @@ package service
 import (
 	"errors"
 	"strings"
+	"sync"
 
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"gorm.io/gorm"
 )
 
-type fsPathService struct{}
+type fsPathService struct{
+	// pathCache 缓存路径信息，key为路径字符串，value为*common.FSPath
+	pathCache sync.Map
+}
 
 var FSPathService = &fsPathService{}
 
@@ -23,6 +27,13 @@ func (s *fsPathService) Get(pathStr string) (*common.FSPath, error) {
 			Name:       "/",
 			EntityType: common.ENTITY_TYPE_FOLDER,
 		}, nil
+	}
+
+	// 先从缓存中查找
+	if cached, ok := s.pathCache.Load(pathStr); ok {
+		if fsPath, ok := cached.(*common.FSPath); ok {
+			return fsPath, nil
+		}
 	}
 
 	// 解析路径
@@ -45,6 +56,11 @@ func (s *fsPathService) Get(pathStr string) (*common.FSPath, error) {
 		}
 		currentPath = &fsPath
 		currentParentID = fsPath.ID
+	}
+
+	// 将结果缓存
+	if currentPath != nil {
+		s.pathCache.Store(pathStr, currentPath)
 	}
 
 	return currentPath, nil
@@ -107,7 +123,14 @@ func (s *fsPathService) Create(pathStr string, entityType int32) error {
 		EntityType: entityType,
 	}
 
-	return vars.Database.Create(fsPath).Error
+	if err := vars.Database.Create(fsPath).Error; err != nil {
+		return err
+	}
+
+	// 更新缓存
+	s.pathCache.Store(pathStr, fsPath)
+
+	return nil
 }
 
 // checkDuplicateName 检查同级路径名称是否重复
@@ -151,6 +174,8 @@ func (s *fsPathService) Delete(pathStrs []string, recursive bool) error {
 				if err := s.deleteRecursivelyInTx(tx, pathStr); err != nil {
 					return err
 				}
+				// 清除缓存（递归删除会在deleteRecursivelyInTx中处理）
+				s.invalidateCacheRecursively(pathStr)
 			} else {
 				// 非递归删除，检查是否有子路径
 				var count int64
@@ -163,6 +188,8 @@ func (s *fsPathService) Delete(pathStrs []string, recursive bool) error {
 				if err := tx.Delete(&common.FSPath{}, fsPath.ID).Error; err != nil {
 					return err
 				}
+				// 清除缓存
+				s.pathCache.Delete(pathStr)
 			}
 		}
 		return nil
@@ -258,6 +285,9 @@ func (s *fsPathService) Move(pathStrs []string, newParentPathStr string) error {
 			if err := tx.Model(&common.FSPath{}).Where("id = ?", sourcePath.ID).Update("parent_id", newParentID).Error; err != nil {
 				return err
 			}
+
+			// 清除旧路径缓存，移动操作会影响路径结构
+			s.invalidateCacheRecursively(pathStr)
 		}
 
 		return nil
@@ -284,7 +314,14 @@ func (s *fsPathService) Rename(pathStr string, newName string) error {
 	}
 
 	// 更新名称
-	return vars.Database.Model(&common.FSPath{}).Where("id = ?", fsPath.ID).Update("name", newName).Error
+	if err := vars.Database.Model(&common.FSPath{}).Where("id = ?", fsPath.ID).Update("name", newName).Error; err != nil {
+		return err
+	}
+
+	// 清除旧路径缓存，重命名会影响路径结构
+	s.invalidateCacheRecursively(pathStr)
+
+	return nil
 }
 
 // checkCircularReference 检查是否会形成循环引用
@@ -325,4 +362,74 @@ func (s *fsPathService) GetChildren(pathStr string) ([]*common.FSPath, error) {
 		return nil, err
 	}
 	return children, nil
+}
+
+// invalidateCacheRecursively 递归清除指定路径及其所有子路径的缓存
+func (s *fsPathService) invalidateCacheRecursively(pathStr string) {
+	// 清除当前路径缓存
+	s.pathCache.Delete(pathStr)
+
+	// 遍历缓存中的所有路径，清除以当前路径为前缀的子路径
+	s.pathCache.Range(func(key, value interface{}) bool {
+		if cachedPath, ok := key.(string); ok {
+			// 检查是否为子路径
+			if strings.HasPrefix(cachedPath, pathStr+"/") {
+				s.pathCache.Delete(cachedPath)
+			}
+		}
+		return true
+	})
+}
+
+// Mkdir 递归创建目录路径，类似 mkdir -p 行为
+func (s *fsPathService) Mkdir(pathStr string) error {
+	if pathStr == "/" {
+		return nil // 根路径已存在
+	}
+
+	// 检查路径是否已存在
+	existingPath, err := s.Get(pathStr)
+	if err != nil {
+		return err
+	}
+	if existingPath != nil {
+		if existingPath.EntityType == common.ENTITY_TYPE_FOLDER {
+			return nil // 目录已存在
+		}
+		return errors.New("path already exists but is not a folder")
+	}
+
+	// 解析路径
+	pathParts := s.parsePath(pathStr)
+	if len(pathParts) == 0 {
+		return errors.New("invalid path")
+	}
+
+	// 递归创建每一级目录
+	currentPath := "/"
+	for _, part := range pathParts {
+		if currentPath == "/" {
+			currentPath = "/" + part
+		} else {
+			currentPath = currentPath + "/" + part
+		}
+
+		// 检查当前级别是否存在
+		currentFSPath, err := s.Get(currentPath)
+		if err != nil {
+			return err
+		}
+
+		if currentFSPath == nil {
+			// 当前级别不存在，创建它
+			if err := s.Create(currentPath, common.ENTITY_TYPE_FOLDER); err != nil {
+				return err
+			}
+		} else if currentFSPath.EntityType != common.ENTITY_TYPE_FOLDER {
+			// 当前级别存在但不是文件夹
+			return errors.New("path component exists but is not a folder: " + currentPath)
+		}
+	}
+
+	return nil
 }
