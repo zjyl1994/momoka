@@ -139,7 +139,7 @@ func HttpDownload(url, filePath string) error {
 }
 
 func GetImageURL(c *fiber.Ctx, img *common.Image) (string, error) {
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.HID_TYPE_IMAGE, img.ID})
+	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_IMAGE, img.ID})
 	if err != nil {
 		return "", err
 	}

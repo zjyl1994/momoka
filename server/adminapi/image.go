@@ -255,7 +255,7 @@ func parseFolderID(val string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	if len(folderId) != 2 || folderId[0] != common.HID_TYPE_FOLDER {
+	if len(folderId) != 2 || folderId[0] != common.ENTITY_TYPE_FOLDER {
 		return 0, errors.New("invalid folder id")
 	}
 	return folderId[1], nil
