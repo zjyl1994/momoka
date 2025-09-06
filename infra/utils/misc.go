@@ -222,3 +222,24 @@ func RandStr(length int) string {
 	}
 	return sb.String()
 }
+
+// GetFileContentType 获取文件的MIME类型
+func GetFileContentType(filePath string) (string, error) {
+    // 打开文件
+    file, err := os.Open(filePath)
+    if err != nil {
+        return "", err
+    }
+    defer file.Close()
+
+    // 读取文件的前512字节用于检测
+    buffer := make([]byte, 512)
+    _, err = file.Read(buffer)
+    if err != nil && err != io.EOF {
+        return "", err
+    }
+
+    // 使用http包的DetectContentType函数检测MIME类型
+    contentType := http.DetectContentType(buffer)
+    return contentType, nil
+}
