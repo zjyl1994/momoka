@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -19,17 +20,21 @@ type s3TaskService struct {
 
 var S3TaskService = &s3TaskService{}
 
-func (s *s3TaskService) Add(task []*common.S3Task) error {
-	err := vars.Database.CreateInBatches(task, 100).Error
-	go s.taskRunner()
-	return err
+func (s *s3TaskService) Add(db *gorm.DB, task []*common.S3Task) error {
+	return db.CreateInBatches(task, 100).Error
 }
 
 func (s *s3TaskService) getTasks() ([]*common.S3Task, error) {
 	return s.getTaskSingleFlight.Do("waiting_tasks", func() ([]*common.S3Task, error) {
 		var tasks []*common.S3Task
 		err := vars.Database.Transaction(func(tx *gorm.DB) error {
-			err := tx.Where("status = ?", common.S3TASK_STATUS_WAITING).Find(&tasks).Error
+			lockExpire := time.Now().Add(-10 * time.Minute).Unix()
+			err := tx.Where("status = ?", common.S3TASK_STATUS_WAITING).
+				Or("status = ?", common.S3TASK_STATUS_FAILED).
+				Or(
+					tx.Where("status = ?", common.S3TASK_STATUS_RUNNING).
+						Where("locked_at < ?", lockExpire),
+				).Find(&tasks).Error
 			if err != nil {
 				return err
 			}
@@ -41,14 +46,17 @@ func (s *s3TaskService) getTasks() ([]*common.S3Task, error) {
 			taskIds := lo.Map(tasks, func(t *common.S3Task, _ int) int64 {
 				return t.ID
 			})
-			return tx.Model(&common.S3Task{}).Where("id IN ?", taskIds).Update("status", common.S3TASK_STATUS_RUNNING).Error
+			return tx.Model(&common.S3Task{}).Where("id IN ?", taskIds).Updates(map[string]interface{}{
+				"status":    common.S3TASK_STATUS_RUNNING,
+				"locked_at": time.Now(),
+			}).Error
 		})
 
 		return tasks, err
 	})
 }
 
-func (s *s3TaskService) taskRunner() {
+func (s *s3TaskService) RunTask() {
 	s.runnerLock.Lock()
 	defer s.runnerLock.Unlock()
 

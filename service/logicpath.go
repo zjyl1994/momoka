@@ -82,7 +82,7 @@ func (s *logicPathService) parsePath(pathStr string) []string {
 
 // Create 根据路径字符串创建新路径
 // Create 创建路径
-func (s *logicPathService) Create(db *gorm.DB, pathStr string, entityType int32) error {
+func (s *logicPathService) Create(db *gorm.DB, pathStr string, entityType int32, entityID int64) error {
 	if pathStr == "/" {
 		return errors.New("root path already exists")
 	}
@@ -195,6 +195,10 @@ func (s *logicPathService) Delete(db *gorm.DB, pathStrs []string, recursive bool
 		}
 		return nil
 	})
+}
+
+func (s *logicPathService) DeleteByEntity(db *gorm.DB, entityType int32, entityID int64) error {
+	return db.Delete(&common.LogicPath{}, "entity_type = ? AND entity_id = ?", entityType, entityID).Error
 }
 
 // deleteRecursivelyInTx 在事务中递归删除路径及其所有子路径的内部方法
@@ -426,7 +430,7 @@ func (s *logicPathService) Mkdir(db *gorm.DB, pathStr string) error {
 
 		if currentFSPath == nil {
 			// 当前级别不存在，创建它
-			err := s.Create(db, currentPath, common.ENTITY_TYPE_FOLDER)
+			err := s.Create(db, currentPath, common.ENTITY_TYPE_FOLDER, 0)
 			if err != nil {
 				return err
 			}

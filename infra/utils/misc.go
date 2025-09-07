@@ -39,10 +39,6 @@ func GetImageCachePath(imageHash, extName string) string {
 	return DataPath("cache", imageHash[0:2], imageHash[2:4], imageHash+extName)
 }
 
-func TouchFile(filepath string) error {
-	now := time.Now()
-	return os.Chtimes(filepath, now, now)
-}
 
 // ConvWebp 将图片转换为WebP格式
 func ConvWebp(inputFile, outFile string) error {
@@ -64,14 +60,6 @@ func ConvWebp(inputFile, outFile string) error {
 	return nil
 }
 
-// FileExists 检查文件是否存在
-func FileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
 
 // RunTickerTask 运行定时任务
 func RunTickerTask(ctx context.Context, interval time.Duration, firstNow bool, task func(context.Context)) {
@@ -174,45 +162,6 @@ func GetFolderForDashboard(path string) (int64, int64, error) {
 	return fileCount, totalSize, nil
 }
 
-func ScanFolder(path string) ([]common.FileInfo, error) {
-	var files []common.FileInfo
-
-	// 遍历目录下的所有文件
-	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// 跳过目录
-		if info.IsDir() {
-			return nil
-		}
-
-		// 获取相对路径
-		relPath, err := filepath.Rel(path, filePath)
-		if err != nil {
-			return err
-		}
-
-		// 构建FileInfo结构
-		fileInfo := common.FileInfo{
-			Name:    info.Name(),
-			Ext:     filepath.Ext(info.Name()),
-			Path:    relPath,
-			Size:    info.Size(),
-			ModTime: info.ModTime(),
-		}
-
-		files = append(files, fileInfo)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return files, nil
-}
 
 func RandStr(length int) string {
 	charset := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -221,25 +170,4 @@ func RandStr(length int) string {
 		sb.WriteRune(charset[rand.IntN(len(charset))])
 	}
 	return sb.String()
-}
-
-// GetFileContentType 获取文件的MIME类型
-func GetFileContentType(filePath string) (string, error) {
-    // 打开文件
-    file, err := os.Open(filePath)
-    if err != nil {
-        return "", err
-    }
-    defer file.Close()
-
-    // 读取文件的前512字节用于检测
-    buffer := make([]byte, 512)
-    _, err = file.Read(buffer)
-    if err != nil && err != io.EOF {
-        return "", err
-    }
-
-    // 使用http包的DetectContentType函数检测MIME类型
-    contentType := http.DetectContentType(buffer)
-    return contentType, nil
 }

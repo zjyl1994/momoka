@@ -85,6 +85,7 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/files/:path*", adminapi.GetLogicPathHandler)
 	adminAPI.Post("/files/:path*", adminapi.CreateLogicPathHandler)
 	adminAPI.Delete("/files/:path*", adminapi.DeleteLogicPathHandler)
+	adminAPI.Post("/file", adminapi.UploadFileHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,

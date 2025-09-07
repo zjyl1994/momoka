@@ -6,6 +6,9 @@ type LogicFile struct {
 	ExtName     string `json:"ext_name"`
 	ContentType string `json:"content_type"`
 	FileSize    int64  `json:"file_size"`
-	FileName    string `json:"file_name"`
 	URL         string `gorm:"-:all" json:"url,omitempty"`
+	LocalPath   string `gorm:"-:all" json:"local_path,omitempty"`
+	RemotePath  string `gorm:"-:all" json:"remote_path,omitempty"`
+	CreateTime  int64  `gorm:"autoCreateTime" json:"create_time"`
+	UpdateTime  int64  `gorm:"autoUpdateTime" json:"update_time"`
 }

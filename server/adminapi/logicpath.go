@@ -62,7 +62,7 @@ func CreateLogicPathHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	err := service.LogicPathService.Create(vars.Database, pathStr, req.EntityType)
+	err := service.LogicPathService.Create(vars.Database, pathStr, req.EntityType, 0)
 	if err != nil {
 		logrus.Errorf("Create LogicPath failed, err: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
