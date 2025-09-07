@@ -102,6 +102,10 @@ func (s *logicFileService) Save(file *multipart.FileHeader, logicPath string) (*
 		logrus.Errorln("save file metadata failed", err)
 		return nil, err
 	}
+	err = s.fillModel(m)
+	if err != nil {
+		return nil, err
+	}
 	go S3TaskService.RunTask()
 	return m, nil
 }

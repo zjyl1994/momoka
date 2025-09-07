@@ -23,6 +23,8 @@ import (
 )
 
 func Startup() (err error) {
+	var initialized bool
+
 	vars.BootTime = time.Now()
 	vars.DebugMode, _ = strconv.ParseBool(os.Getenv("MOMOKA_DEBUG"))
 	if vars.DebugMode {
@@ -48,7 +50,6 @@ func Startup() (err error) {
 	}
 
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")
-	vars.Secret = utils.COALESCE(os.Getenv("MOMOKA_SECRET"), "momoka")
 
 	vars.AutoCleanDays, err = strconv.Atoi(utils.COALESCE(os.Getenv("MOMOKA_AUTO_CLEAN_DAYS"), "7"))
 	if err != nil {
@@ -99,7 +100,8 @@ func Startup() (err error) {
 	if err != nil {
 		return err
 	}
-	if secret == "" {
+	initialized = secret != ""
+	if !initialized {
 		secret = utils.RandStr(32)
 		err = service.SettingService.Set(common.SETTING_KEY_SYSTEM_RAND_SECRET, secret)
 		if err != nil {
@@ -135,7 +137,7 @@ func Startup() (err error) {
 		})
 	}
 	// 启动后台自动备份服务
-	go utils.RunTickerTask(context.Background(), time.Hour, true, service.BackgroundBackupTask)
+	go utils.RunTickerTask(context.Background(), time.Hour, initialized, service.BackgroundBackupTask)
 
 	return server.Run(vars.ListenAddr)
 }

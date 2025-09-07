@@ -18,7 +18,6 @@ var getImageSf utils.SingleFlight[string]
 var webpSf utils.SingleFlight[string]
 
 func GetImageHandler(c *fiber.Ctx) error {
-	ctx := c.Context()
 	fileName := c.Params("filename")
 
 	localPath, err := getImageSf.Do(fileName, func() (string, error) {
@@ -34,7 +33,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 		}
 
 		// 检查库里有没有，防止穿透到S3上产生404请求费用
-		imgObj, err := service.ImageService.GetByID(imageId[1])
+		imgObj, err := service.LogicFileService.Get(imageId[1])
 		if err != nil {
 			return "", err
 		}
@@ -43,15 +42,14 @@ func GetImageHandler(c *fiber.Ctx) error {
 		}
 
 		// 加载图片实际路径
-		cachePath := utils.GetImageCachePath(imgObj.Hash, extName)
-		if !utils.FileExists(cachePath) {
+		if !utils.FileExists(imgObj.LocalPath) {
 			// 从S3下载
-			err = service.StorageService.Download(ctx, imgObj.Hash+extName, cachePath)
+			err = service.LogicFileService.Download(imgObj)
 			if err != nil {
 				return "", err
 			}
 		}
-		return cachePath, nil
+		return imgObj.LocalPath, nil
 	})
 
 	if err != nil {
