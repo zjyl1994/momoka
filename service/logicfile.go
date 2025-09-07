@@ -52,13 +52,13 @@ func (s *logicFileService) Save(file *multipart.FileHeader, logicPath string) (*
 		return nil, err
 	}
 
-	m := &common.LogicFile{
+	m := common.LogicFile{
 		Hash:        fileHash,
 		ContentType: file.Header.Get("Content-Type"),
 		FileSize:    file.Size,
 		ExtName:     filepath.Ext(file.Filename),
 	}
-	err = s.fillModel(m)
+	err = s.fillModel(&m)
 	if err != nil {
 		return nil, err
 	}
@@ -81,16 +81,19 @@ func (s *logicFileService) Save(file *multipart.FileHeader, logicPath string) (*
 			return err
 		}
 
-		err = tx.Create(m).Error
+		err = tx.Create(&m).Error
 		if err != nil {
 			return err
 		}
+
+		logrus.Debugln("create logic file success", m.ID)
 
 		baseDir := filepath.Dir(logicPath)
 		err = LogicPathService.Mkdir(tx, baseDir)
 		if err != nil {
 			return err
 		}
+
 		err = LogicPathService.Create(tx, logicPath, common.ENTITY_TYPE_IMAGE, m.ID)
 		if err != nil {
 			return err
@@ -102,12 +105,12 @@ func (s *logicFileService) Save(file *multipart.FileHeader, logicPath string) (*
 		logrus.Errorln("save file metadata failed", err)
 		return nil, err
 	}
-	err = s.fillModel(m)
+	err = s.fillModel(&m)
 	if err != nil {
 		return nil, err
 	}
 	go S3TaskService.RunTask()
-	return m, nil
+	return &m, nil
 }
 
 func (s *logicFileService) Download(file *common.LogicFile) error {

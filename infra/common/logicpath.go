@@ -1,7 +1,7 @@
 package common
 
 type LogicPath struct {
-	ID         int64  `json:"id"`
+	ID         int64  `gorm:"primaryKey" json:"id"`
 	ParentID   int64  `gorm:"default:0;uniqueIndex:idx_parent_name" json:"parent_id"`
 	Name       string `gorm:"uniqueIndex:idx_parent_name" json:"name"`
 	EntityType int32  `json:"entity_type"`

@@ -121,6 +121,7 @@ func (s *logicPathService) Create(db *gorm.DB, pathStr string, entityType int32,
 		ParentID:   parentID,
 		Name:       pathParts[len(pathParts)-1],
 		EntityType: entityType,
+		EntityID:   entityID,
 	}
 
 	if err := db.Create(fsPath).Error; err != nil {

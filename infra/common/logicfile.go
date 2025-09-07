@@ -1,7 +1,7 @@
 package common
 
 type LogicFile struct {
-	ID          int64  `json:"id"`
+	ID          int64  `gorm:"primaryKey" json:"id"`
 	Hash        string `gorm:"unique;not null" json:"hash"`
 	ExtName     string `json:"ext_name"`
 	ContentType string `json:"content_type"`
