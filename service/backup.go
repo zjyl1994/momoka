@@ -22,12 +22,8 @@ type backupService struct{}
 var BackupService = &backupService{}
 
 func (s *backupService) GenerateMetadata() ([]byte, error) {
-	var folders []common.ImageFolder
-	if err := vars.Database.Find(&folders).Error; err != nil {
-		return nil, err
-	}
-	var images []common.Image
-	if err := vars.Database.Find(&images).Error; err != nil {
+	var vfats []common.VirtualFAT
+	if err := vars.Database.Find(&vfats).Error; err != nil {
 		return nil, err
 	}
 	var settings []common.Setting
@@ -35,10 +31,9 @@ func (s *backupService) GenerateMetadata() ([]byte, error) {
 		return nil, err
 	}
 	result := common.BackupFormat{
-		Version:     common.BACKUP_FILE_VERSION,
-		ImageFolder: folders,
-		Images:      images,
-		Settings:    settings,
+		Version:  common.BACKUP_FILE_VERSION,
+		Fats:     vfats,
+		Settings: settings,
 	}
 	data, err := json.Marshal(result)
 	if err != nil {
@@ -60,17 +55,10 @@ func (s *backupService) RestoreMetadata(data []byte) error {
 		return errors.New("backup file version is not supported")
 	}
 	return vars.Database.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&common.ImageFolder{}).Error; err != nil {
+		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&common.VirtualFAT{}).Error; err != nil {
 			return err
 		}
-		if err := tx.CreateInBatches(&result.ImageFolder, 100).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&common.Image{}).Error; err != nil {
-			return err
-		}
-		if err := tx.CreateInBatches(&result.Images, 100).Error; err != nil {
+		if err := tx.CreateInBatches(&result.Fats, 100).Error; err != nil {
 			return err
 		}
 

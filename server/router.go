@@ -69,6 +69,7 @@ func Run(listenAddr string) error {
 	adminAPI.Patch("/image/batch", adminapi.BatchMoveImageHandler)
 	adminAPI.Delete("/folder/batch", adminapi.BatchDeleteFolderHandler)
 	adminAPI.Patch("/folder/batch", adminapi.BatchMoveFolderHandler)
+
 	adminAPI.Get("/setting", adminapi.ListSettingHandler)
 	adminAPI.Patch("/setting", adminapi.UpdateSettingHandler)
 	adminAPI.Get("/readonly-setting", adminapi.GetReadonlySettingHandler)

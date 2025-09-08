@@ -1,8 +1,7 @@
 package common
 
 type BackupFormat struct {
-	Version     int           `json:"version"`
-	Images      []Image       `json:"images"`
-	ImageFolder []ImageFolder `json:"folders"`
-	Settings    []Setting     `json:"settings"`
+	Version  int          `json:"version"`
+	Fats     []VirtualFAT `json:"vfat"`
+	Settings []Setting    `json:"settings"`
 }
