@@ -38,7 +38,7 @@ func (s *logicFileService) Get(id int64) (*common.LogicFile, error) {
 func (s *logicFileService) fillModel(m *common.LogicFile) error {
 	m.RemotePath = m.Hash + m.ExtName
 	m.LocalPath = utils.DataPath("cache", m.Hash[0:2], m.Hash[2:4], m.Hash+m.ExtName)
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_IMAGE, m.ID})
+	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_FILE, m.ID})
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (s *logicFileService) Save(file *multipart.FileHeader, logicPath string) (*
 			return err
 		}
 
-		err = LogicPathService.Create(tx, logicPath, common.ENTITY_TYPE_IMAGE, m.ID)
+		err = LogicPathService.Create(tx, logicPath, common.ENTITY_TYPE_FILE, m.ID)
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func (s *logicFileService) Delete(file *common.LogicFile) error {
 		if err != nil {
 			return err
 		}
-		err = LogicPathService.DeleteByEntity(tx, common.ENTITY_TYPE_IMAGE, file.ID)
+		err = LogicPathService.DeleteByEntity(tx, common.ENTITY_TYPE_FILE, file.ID)
 		if err != nil {
 			return err
 		}

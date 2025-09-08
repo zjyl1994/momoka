@@ -39,7 +39,6 @@ func GetImageCachePath(imageHash, extName string) string {
 	return DataPath("cache", imageHash[0:2], imageHash[2:4], imageHash+extName)
 }
 
-
 // ConvWebp 将图片转换为WebP格式
 func ConvWebp(inputFile, outFile string) error {
 	ext := filepath.Ext(inputFile)
@@ -59,7 +58,6 @@ func ConvWebp(inputFile, outFile string) error {
 	}
 	return nil
 }
-
 
 // RunTickerTask 运行定时任务
 func RunTickerTask(ctx context.Context, interval time.Duration, firstNow bool, task func(context.Context)) {
@@ -127,7 +125,7 @@ func HttpDownload(url, filePath string) error {
 }
 
 func GetImageURL(c *fiber.Ctx, img *common.Image) (string, error) {
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_IMAGE, img.ID})
+	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_FILE, img.ID})
 	if err != nil {
 		return "", err
 	}
@@ -161,7 +159,6 @@ func GetFolderForDashboard(path string) (int64, int64, error) {
 
 	return fileCount, totalSize, nil
 }
-
 
 func RandStr(length int) string {
 	charset := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")

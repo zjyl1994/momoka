@@ -28,7 +28,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 		if err != nil {
 			return "", err
 		}
-		if len(imageId) != 2 || imageId[0] != common.ENTITY_TYPE_IMAGE {
+		if len(imageId) != 2 || imageId[0] != common.ENTITY_TYPE_FILE {
 			return "", errors.New("invalid image id")
 		}
 

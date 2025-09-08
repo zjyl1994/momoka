@@ -56,7 +56,7 @@ func CreateLogicPathHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	if req.EntityType != common.ENTITY_TYPE_IMAGE && req.EntityType != common.ENTITY_TYPE_FOLDER {
+	if req.EntityType != common.ENTITY_TYPE_FILE && req.EntityType != common.ENTITY_TYPE_FOLDER {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid entity type",
 		})

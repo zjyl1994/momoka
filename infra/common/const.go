@@ -1,7 +1,7 @@
 package common
 
 const (
-	ENTITY_TYPE_IMAGE  = 1
+	ENTITY_TYPE_FILE   = 1
 	ENTITY_TYPE_FOLDER = 2
 
 	S3TASK_ACTION_UPLOAD = 1
