@@ -630,5 +630,11 @@ func (s *virtualFATService) GetAllFiles(db *gorm.DB, page, pageSize int) ([]*com
 	if err := db.Where("is_folder = ?", false).Offset((page - 1) * pageSize).Limit(pageSize).Find(&files).Error; err != nil {
 		return nil, 0, err
 	}
+	// 为每个文件填充模型信息（包括URL等字段）
+	for _, file := range files {
+		if err := s.fillModel(file); err != nil {
+			return nil, 0, err
+		}
+	}
 	return files, total, nil
 }

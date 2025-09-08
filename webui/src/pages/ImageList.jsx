@@ -43,10 +43,15 @@ const ImageList = () => {
         size: size.toString()
       });
       
-      const response = await authFetch(`/admin-api/image/all?${params}`);
+      const response = await authFetch(`/admin-api/file/all?${params}`);
       if (response.ok) {
         const data = await response.json();
-        const newImages = data.images || [];
+        const rawImages = data.files || [];
+        // 适配后端数据结构：将name和ext_name组合成file_name
+        const newImages = rawImages.map(img => ({
+          ...img,
+          file_name: img.name + (img.ext_name || '')
+        }));
         
         if (isLoadMore) {
           // Merge and deduplicate images by ID to avoid duplicate keys
@@ -174,7 +179,7 @@ const ImageList = () => {
               {image.url && (
                 <Image
                   src={image.url}
-                  alt={image.file_name}
+                  alt={image.name + (image.ext_name || '')}
                   style={{ width: '100%', display: 'block' }}
                   preview={false}
                 />
@@ -192,7 +197,7 @@ const ImageList = () => {
                 }}
               >
                 <div style={{ fontWeight: 500, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {image.file_name}
+                  {image.name + (image.ext_name || '')}
                 </div>
                 <div style={{ opacity: 0.8 }}>
                   {formatFileSize(image.file_size)} • {formatTime(image.create_time)}

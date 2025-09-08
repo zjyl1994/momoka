@@ -23,7 +23,7 @@ const ImageUpload = () => {
   const fetchFolderTree = async () => {
     setLoadingFolders(true);
     try {
-      const response = await authFetch('/admin-api/folder/tree');
+      const response = await authFetch('/admin-api/file/tree');
       if (response.ok) {
         const data = await response.json();
         const treeData = convertToTreeSelectData(data);
@@ -40,20 +40,32 @@ const ImageUpload = () => {
   };
 
   // 转换文件夹数据为TreeSelect格式
-  const convertToTreeSelectData = (folders) => {
-    if (!folders || folders.length === 0) {
-      return [{ title: '根目录', value: 0, key: 0 }];
+  const convertToTreeSelectData = (rootFolder) => {
+    if (!rootFolder) {
+      return [{ title: '根目录', value: '/', key: '/' }];
     }
     
-    const convertNode = (folder) => ({
-      title: folder.name,
-      value: folder.id,
-      key: folder.id,
-      children: folder.children ? folder.children.map(convertNode) : []
-    });
+    const convertNode = (folder) => {
+      // 构建路径：根节点为 "/"，子节点为父路径 + "/" + 名称
+      const getPath = (node, parentPath = '') => {
+        if (node.id === 0) return '/';
+        return parentPath === '/' ? `/${node.name}` : `${parentPath}/${node.name}`;
+      };
+      
+      const buildNode = (node, parentPath = '') => {
+        const currentPath = getPath(node, parentPath);
+        return {
+          title: node.name,
+          value: currentPath,
+          key: currentPath,
+          children: node.children ? node.children.map(child => buildNode(child, currentPath)) : []
+        };
+      };
+      
+      return buildNode(folder);
+    };
     
-    const rootNode = { title: '根目录', value: 0, key: 0, children: folders.map(convertNode) };
-    return [rootNode];
+    return [convertNode(rootFolder)];
   };
 
   useEffect(() => {
@@ -104,10 +116,10 @@ const ImageUpload = () => {
         const file = fileList[i];
         const formData = new FormData();
         formData.append('file', file.originFileObj);
-        formData.append('folder_id', values.folder.toString());
+        formData.append('path', values.folder);
 
         try {
-          const response = await authFetch('/admin-api/image', {
+          const response = await authFetch('/admin-api/file/upload', {
             method: 'POST',
             body: formData,
           });
@@ -116,7 +128,7 @@ const ImageUpload = () => {
             const result = await response.json();
             results.push({
               filename: file.name,
-              url: result.url,
+              url: result.file.url,
               success: true
             });
           } else {
@@ -172,7 +184,7 @@ const ImageUpload = () => {
           form={form}
           layout="vertical"
           initialValues={{
-            folder: 0
+            folder: '/'
           }}
         >
           <Form.Item

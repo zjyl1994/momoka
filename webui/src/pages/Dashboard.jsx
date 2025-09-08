@@ -4,7 +4,6 @@ import {
   FileImageOutlined,
   CloudUploadOutlined,
   DatabaseOutlined,
-  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 
@@ -22,7 +21,6 @@ const Dashboard = () => {
     boot_time: 0,
     uptime: 0
   });
-  const [cacheData, setCacheData] = useState([]);
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);
 
@@ -45,7 +43,6 @@ const Dashboard = () => {
         const data = await response.json();
         setDashboardData(data.count);
         setStatData(data.stat);
-        setCacheData(data.cache || []);
         hasFetched.current = true;
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -219,82 +216,6 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* 缓存详情 */}
-      <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
-        <Col xs={24}>
-          <Card title="最近10条访问记录" loading={loading} styles={{ body: { padding: 0 } }}>
-            <Table
-              dataSource={cacheData}
-              rowKey="hash"
-              pagination={false}
-              columns={[
-                {
-                  title: '图片',
-                  dataIndex: 'file_name',
-                  key: 'file_name',
-                  render: (text, record) => (
-                    <div>
-                      <Image
-                        src={record.url}
-                        style={{ display: 'none' }}
-                        preview={{
-                          src: record.url
-                        }}
-                        id={`preview-${record.hash}`}
-                      />
-                      <span 
-                        style={{ 
-                          color: '#1890ff', 
-                          cursor: 'pointer',
-                          textDecoration: 'none'
-                        }}
-                        onClick={() => {
-                          // Trigger preview by finding and clicking the hidden image
-                          const previewImg = document.getElementById(`preview-${record.hash}`);
-                          if (previewImg) {
-                            previewImg.click();
-                          }
-                        }}
-                        onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
-                        onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
-                      >
-                        {text || '未命名'}
-                      </span>
-                    </div>
-                  )
-                },
-                {
-                  title: '文件大小',
-                  dataIndex: 'file_size',
-                  key: 'file_size',
-                  width: 120,
-                  render: (text) => formatBytes(text),
-                },
-                {
-                  title: '缓存大小',
-                  dataIndex: 'cache_size',
-                  key: 'cache_size',
-                  width: 120,
-                  render: (text) => formatBytes(text),
-                },
-                {
-                  title: '最近访问时间',
-                  dataIndex: 'access_time',
-                  key: 'access_time',
-                  width: 180,
-                  render: (text) => (
-                    <Tooltip title={new Date(text * 1000).toLocaleString()}>
-                      <span><ClockCircleOutlined style={{ marginRight: '5px' }} />{new Date(text * 1000).toLocaleString()}</span>
-                    </Tooltip>
-                  ),
-                },
-
-              ]}
-            />
           </Card>
         </Col>
       </Row>
