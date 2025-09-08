@@ -54,12 +54,14 @@ func (s *virtualFATService) Save(file *multipart.FileHeader, logicPath string) (
 	if err != nil {
 		return nil, err
 	}
-
+	extName := filepath.Ext(file.Filename)
+	bareName := strings.TrimSuffix(file.Filename, extName)
 	m := common.VirtualFAT{
 		Hash:        fileHash,
 		ContentType: file.Header.Get("Content-Type"),
 		FileSize:    file.Size,
-		ExtName:     filepath.Ext(file.Filename),
+		ExtName:     extName,
+		Name:        bareName,
 	}
 	err = s.fillModel(&m)
 	if err != nil {
@@ -133,6 +135,7 @@ func (s *virtualFATService) Delete(pathStr []string) error {
 			return err
 		}
 	}
+	go S3TaskService.RunTask()
 	return nil
 }
 
@@ -207,7 +210,6 @@ func (s *virtualFATService) deleteFile(fileObj *common.VirtualFAT, pathStr strin
 	}
 	os.Remove(fileObj.LocalPath)
 	s.pathCache.Delete(pathStr)
-	go S3TaskService.RunTask()
 	return nil
 }
 

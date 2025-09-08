@@ -70,35 +70,100 @@ func (s *s3TaskService) RunTask() {
 		return
 	}
 
-	for _, task := range tasks {
-		logrus.Infof("run task %d", task.ID)
+	// 按操作类型分组任务
+	uploadTasks := make([]*common.S3Task, 0)
+	deleteTasks := make([]*common.S3Task, 0)
 
-		var taskStatus int32
-		if err := s.runTask(task); err != nil {
-			logrus.Errorln("run task failed", err)
+	for _, task := range tasks {
+		switch task.Action {
+		case common.S3TASK_ACTION_UPLOAD:
+			uploadTasks = append(uploadTasks, task)
+		case common.S3TASK_ACTION_DELETE:
+			deleteTasks = append(deleteTasks, task)
+		}
+	}
+
+	// 处理上传任务（单个处理）
+	for _, task := range uploadTasks {
+		logrus.Infof("run upload task %d", task.ID)
+		s.processUploadTask(task)
+	}
+
+	// 批量处理删除任务
+	if len(deleteTasks) > 0 {
+		logrus.Infof("run batch delete tasks, count: %d", len(deleteTasks))
+		s.processBatchDeleteTasks(deleteTasks)
+	}
+}
+
+// processUploadTask 处理单个上传任务
+func (s *s3TaskService) processUploadTask(task *common.S3Task) {
+	ctx := context.Background()
+	var taskStatus int32
+
+	contentType, err := utils.GetFileContentType(task.LocalPath)
+	if err != nil {
+		logrus.Errorln("get file content type failed", err)
+		taskStatus = common.S3TASK_STATUS_FAILED
+	} else {
+		if err := StorageService.Upload(ctx, task.LocalPath, task.RemotePath, contentType); err != nil {
+			logrus.Errorln("upload task failed", err)
 			taskStatus = common.S3TASK_STATUS_FAILED
+		} else {
+			taskStatus = common.S3TASK_STATUS_SUCCESS
+		}
+	}
+
+	if err := vars.Database.Model(&common.S3Task{}).Where("id = ?", task.ID).Update("status", taskStatus).Error; err != nil {
+		logrus.Errorln("update upload task status failed", err)
+	}
+}
+
+// processBatchDeleteTasks 批量处理删除任务
+func (s *s3TaskService) processBatchDeleteTasks(tasks []*common.S3Task) {
+	ctx := context.Background()
+
+	// 提取所有远程路径
+	remotePaths := make([]string, len(tasks))
+	taskMap := make(map[string]*common.S3Task)
+	for i, task := range tasks {
+		remotePaths[i] = task.RemotePath
+		taskMap[task.RemotePath] = task
+	}
+
+	// 批量删除
+	failedPaths, err := StorageService.DeleteObjs(ctx, remotePaths)
+	if err != nil {
+		logrus.Errorln("batch delete failed", err)
+		// 如果整个批量删除失败，将所有任务标记为失败
+		for _, task := range tasks {
+			if updateErr := vars.Database.Model(&common.S3Task{}).Where("id = ?", task.ID).Update("status", common.S3TASK_STATUS_FAILED).Error; updateErr != nil {
+				logrus.Errorln("update delete task status failed", updateErr)
+			}
+		}
+		return
+	}
+
+	// 创建失败路径的集合，用于快速查找
+	failedPathSet := make(map[string]bool)
+	for _, path := range failedPaths {
+		failedPathSet[path] = true
+	}
+
+	// 更新任务状态
+	for _, task := range tasks {
+		var taskStatus int32
+		if failedPathSet[task.RemotePath] {
+			taskStatus = common.S3TASK_STATUS_FAILED
+			logrus.Errorf("delete task %d failed for path: %s", task.ID, task.RemotePath)
 		} else {
 			taskStatus = common.S3TASK_STATUS_SUCCESS
 		}
 
 		if err := vars.Database.Model(&common.S3Task{}).Where("id = ?", task.ID).Update("status", taskStatus).Error; err != nil {
-			logrus.Errorln("update task status failed", err)
+			logrus.Errorln("update delete task status failed", err)
 		}
 	}
-}
 
-func (s *s3TaskService) runTask(task *common.S3Task) error {
-	ctx := context.Background()
-	switch task.Action {
-	case common.S3TASK_ACTION_UPLOAD:
-		contentType, err := utils.GetFileContentType(task.LocalPath)
-		if err != nil {
-			return err
-		}
-		return StorageService.Upload(ctx, task.LocalPath, task.RemotePath, contentType)
-	case common.S3TASK_ACTION_DELETE:
-		return StorageService.Delete(ctx, task.RemotePath)
-	default:
-		return nil
-	}
+	logrus.Infof("batch delete completed, success: %d, failed: %d", len(tasks)-len(failedPaths), len(failedPaths))
 }
