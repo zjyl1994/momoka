@@ -109,13 +109,80 @@ func (s *virtualFATService) Save(file *multipart.FileHeader, logicPath string) (
 	return &m, nil
 }
 
-// Delete 删除文件
-func (s *virtualFATService) Delete(pathStr string) error {
-	fileObj, err := s.GetPath(vars.Database, pathStr)
+// Delete 删除文件或目录
+func (s *virtualFATService) Delete(pathStr []string) error {
+	// 批量处理每个路径
+	for _, p := range pathStr {
+		fileObj, err := s.GetPath(vars.Database, p)
+		if err != nil {
+			return err
+		}
+		if fileObj == nil {
+			return errors.New("path not found: " + p)
+		}
+
+		// 如果是目录，递归删除所有子项
+		if fileObj.IsFolder {
+			err = s.deleteDirectory(fileObj, p)
+		} else {
+			// 如果是文件，使用原有逻辑删除
+			err = s.deleteFile(fileObj, p)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// deleteDirectory 递归删除目录及其所有子项
+func (s *virtualFATService) deleteDirectory(dirObj *common.VirtualFAT, pathStr string) error {
+	// 查找所有子项
+	var children []common.VirtualFAT
+	err := vars.Database.Where("parent_id = ?", dirObj.ID).Find(&children).Error
 	if err != nil {
 		return err
 	}
-	err = s.fillModel(fileObj)
+
+	// 递归删除所有子项
+	for _, child := range children {
+		childPath := pathStr
+		if pathStr == "/" {
+			childPath = "/" + child.Name
+		} else {
+			childPath = pathStr + "/" + child.Name
+		}
+
+		if child.IsFolder {
+			// 递归删除子目录
+			err = s.deleteDirectory(&child, childPath)
+			if err != nil {
+				return err
+			}
+		} else {
+			// 删除子文件
+			err = s.deleteFile(&child, childPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// 删除目录本身
+	err = vars.Database.Delete(dirObj).Error
+	if err != nil {
+		return err
+	}
+
+	// 从缓存中删除
+	s.pathCache.Delete(pathStr)
+	return nil
+}
+
+// deleteFile 删除单个文件
+func (s *virtualFATService) deleteFile(fileObj *common.VirtualFAT, pathStr string) error {
+	err := s.fillModel(fileObj)
 	if err != nil {
 		return err
 	}
@@ -271,4 +338,195 @@ func (s *virtualFATService) Mkdir(db *gorm.DB, pathStr string) (int64, error) {
 	}
 
 	return currentParentID, nil
+}
+
+// checkDuplicateName 检查同级路径名称是否重复
+func (s *virtualFATService) checkDuplicateName(db *gorm.DB, parentID int64, name string, excludeID int64) error {
+	var count int64
+	query := db.Model(&common.VirtualFAT{}).Where("parent_id = ? AND name = ?", parentID, name)
+	if excludeID > 0 {
+		query = query.Where("id != ?", excludeID)
+	}
+	if err := query.Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("path name already exists in the same parent")
+	}
+	return nil
+}
+
+// checkCircularReference 检查是否存在循环引用
+func (s *virtualFATService) checkCircularReference(db *gorm.DB, pathID int64, targetParentID int64) error {
+	current := targetParentID
+	for current != 0 {
+		if current == pathID {
+			return errors.New("circular reference detected")
+		}
+		var path common.VirtualFAT
+		if err := db.Where("id = ?", current).First(&path).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				break
+			}
+			return err
+		}
+		current = path.ParentID
+	}
+	return nil
+}
+
+// invalidateCacheRecursively 递归清除指定路径及其所有子路径的缓存
+func (s *virtualFATService) invalidateCacheRecursively(pathStr string) {
+	// 清除当前路径缓存
+	s.pathCache.Delete(pathStr)
+
+	// 遍历缓存中的所有路径，清除以当前路径为前缀的子路径
+	s.pathCache.Range(func(key, value interface{}) bool {
+		if cachedPath, ok := key.(string); ok {
+			// 检查是否为子路径
+			if strings.HasPrefix(cachedPath, pathStr+"/") {
+				s.pathCache.Delete(cachedPath)
+			}
+		}
+		return true
+	})
+}
+
+// Rename 重命名路径
+func (s *virtualFATService) Rename(db *gorm.DB, pathStr string, newName string) error {
+	if pathStr == "/" {
+		return errors.New("root path cannot be renamed")
+	}
+
+	fsPath, err := s.GetPath(db, pathStr)
+	if err != nil {
+		return err
+	}
+	if fsPath == nil {
+		return errors.New("path not found")
+	}
+
+	// 检查同级是否已有同名路径
+	if err := s.checkDuplicateName(db, fsPath.ParentID, newName, fsPath.ID); err != nil {
+		return err
+	}
+
+	// 更新名称
+	if err := db.Model(&common.VirtualFAT{}).Where("id = ?", fsPath.ID).Update("name", newName).Error; err != nil {
+		return err
+	}
+
+	// 清除旧路径缓存，重命名会影响路径结构
+	s.invalidateCacheRecursively(pathStr)
+
+	return nil
+}
+
+// Move 移动路径
+func (s *virtualFATService) Move(db *gorm.DB, pathStrs []string, newParentPathStr string) error {
+	if len(pathStrs) == 0 {
+		return nil
+	}
+
+	return db.Transaction(func(tx *gorm.DB) error {
+		// 获取目标父路径信息
+		var newParentID int64 = 0
+		if newParentPathStr != "/" {
+			newParent, err := s.GetPath(tx, newParentPathStr)
+			if err != nil {
+				return err
+			}
+			if newParent == nil {
+				return errors.New("target parent path not found")
+			}
+			// 检查目标父路径类型
+			if !newParent.IsFolder {
+				return errors.New("can only move paths under folder type parent")
+			}
+			newParentID = newParent.ID
+		}
+
+		// 批量处理每个路径
+		for _, pathStr := range pathStrs {
+			if pathStr == "/" {
+				return errors.New("root path cannot be moved")
+			}
+
+			// 获取源路径
+			sourcePath, err := s.GetPath(tx, pathStr)
+			if err != nil {
+				return err
+			}
+			if sourcePath == nil {
+				return errors.New("source path not found: " + pathStr)
+			}
+
+			// 检查循环引用
+			if newParentID != 0 {
+				if err := s.checkCircularReference(tx, sourcePath.ID, newParentID); err != nil {
+					return err
+				}
+			}
+
+			// 检查目标位置是否已有同名路径
+			if err := s.checkDuplicateName(tx, newParentID, sourcePath.Name, sourcePath.ID); err != nil {
+				return errors.New("path name already exists in the target parent: " + sourcePath.Name)
+			}
+
+			// 更新父路径ID
+			if err := tx.Model(&common.VirtualFAT{}).Where("id = ?", sourcePath.ID).Update("parent_id", newParentID).Error; err != nil {
+				return err
+			}
+
+			// 清除旧路径缓存，移动操作会影响路径结构
+			s.invalidateCacheRecursively(pathStr)
+		}
+
+		return nil
+	})
+}
+
+// GetChildren 获取指定路径下的所有子文件和文件夹
+func (s *virtualFATService) GetChildren(db *gorm.DB, pathStr string) ([]*common.VirtualFAT, error) {
+	var parentID int64 = 0
+	if pathStr != "/" {
+		parentPath, err := s.GetPath(db, pathStr)
+		if err != nil {
+			return nil, err
+		}
+		if parentPath == nil {
+			return nil, errors.New("parent path not found")
+		}
+		// 检查父路径是否为文件夹
+		if !parentPath.IsFolder {
+			return nil, errors.New("path is not a folder")
+		}
+		parentID = parentPath.ID
+	}
+
+	var children []*common.VirtualFAT
+	if err := db.Where("parent_id = ?", parentID).Find(&children).Error; err != nil {
+		return nil, err
+	}
+
+	// 为文件类型的子项填充模型信息
+	for _, child := range children {
+		if !child.IsFolder {
+			if err := s.fillModel(child); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return children, nil
+}
+
+func (s *virtualFATService) Dashboard() (fileCount int64, fileSize int64, err error) {
+	if err := vars.Database.Model(&common.VirtualFAT{}).Where("is_folder = ?", false).Count(&fileCount).Error; err != nil {
+		return 0, 0, err
+	}
+	if err := vars.Database.Model(&common.VirtualFAT{}).Where("is_folder = ?", false).Select("sum(size)").Scan(&fileSize).Error; err != nil {
+		return 0, 0, err
+	}
+	return fileCount, fileSize, nil
 }
