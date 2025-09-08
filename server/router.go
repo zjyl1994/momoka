@@ -79,7 +79,11 @@ func Run(listenAddr string) error {
 	adminAPI.Get("/backup", adminapi.ListBackupHandler)
 	adminAPI.Delete("/backup", adminapi.DeleteBackupHandler)
 	// 路径管理相关路由
-	adminAPI.Post("/file", adminapi.UploadFileHandler)
+	adminAPI.Post("/file/upload", adminapi.VFATUploadHandler)
+	adminAPI.Post("/file/action", adminapi.VFATActionHandler)
+	adminAPI.Get("/file/list", adminapi.VFATListHandler)
+	adminAPI.Get("/file/tree", adminapi.VFATGetTreeHandler)
+	adminAPI.Get("/file/all", adminapi.VFATGetAllHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,

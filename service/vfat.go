@@ -541,3 +541,78 @@ func (s *virtualFATService) Download(file *common.VirtualFAT) error {
 	}
 	return StorageService.Download(context.Background(), file.RemotePath, file.LocalPath)
 }
+
+func (s *virtualFATService) GetTree(db *gorm.DB) (*common.VirtualFAT, error) {
+	// 获取所有文件夹并构建树形结构
+	var folders []*common.VirtualFAT
+	if err := db.Where("is_folder = ?", true).Find(&folders).Error; err != nil {
+		return nil, err
+	}
+
+	// 创建根节点
+	root := &common.VirtualFAT{
+		ID:       0,
+		ParentID: 0,
+		Name:     "/",
+		IsFolder: true,
+		Children: make([]*common.VirtualFAT, 0),
+	}
+
+	// 创建ID到节点的映射
+	folderMap := make(map[int64]*common.VirtualFAT)
+	folderMap[0] = root
+
+	// 初始化所有文件夹节点的Children切片
+	for _, folder := range folders {
+		folder.Children = make([]*common.VirtualFAT, 0)
+		folderMap[folder.ID] = folder
+	}
+
+	// 使用多轮构建来处理多层嵌套，确保父节点先于子节点处理
+	remaining := make([]*common.VirtualFAT, len(folders))
+	copy(remaining, folders)
+
+	// 最多尝试构建的轮数，防止无限循环
+	maxRounds := len(folders) + 1
+	for round := 0; round < maxRounds && len(remaining) > 0; round++ {
+		processed := make([]*common.VirtualFAT, 0)
+		unprocessed := make([]*common.VirtualFAT, 0)
+
+		// 尝试处理剩余的文件夹
+		for _, folder := range remaining {
+			if parent, exists := folderMap[folder.ParentID]; exists {
+				// 父节点存在，可以添加到树中
+				parent.Children = append(parent.Children, folder)
+				processed = append(processed, folder)
+			} else {
+				// 父节点不存在，留到下一轮处理
+				unprocessed = append(unprocessed, folder)
+			}
+		}
+
+		// 如果这一轮没有处理任何节点，说明存在孤立节点或循环引用
+		if len(processed) == 0 && len(unprocessed) > 0 {
+			// 记录警告但不中断，将孤立节点直接添加到根节点下
+			for _, orphan := range unprocessed {
+				root.Children = append(root.Children, orphan)
+			}
+			break
+		}
+
+		remaining = unprocessed
+	}
+
+	return root, nil
+}
+
+func (s *virtualFATService) GetAllFiles(db *gorm.DB, page, pageSize int) ([]*common.VirtualFAT, int64, error) {
+	var total int64
+	if err := db.Model(&common.VirtualFAT{}).Where("is_folder = ?", false).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	var files []*common.VirtualFAT
+	if err := db.Where("is_folder = ?", false).Offset((page - 1) * pageSize).Limit(pageSize).Find(&files).Error; err != nil {
+		return nil, 0, err
+	}
+	return files, total, nil
+}

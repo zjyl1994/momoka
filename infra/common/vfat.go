@@ -17,6 +17,8 @@ type VirtualFAT struct {
 	URL        string `gorm:"-:all" json:"url,omitempty"`
 	LocalPath  string `gorm:"-:all" json:"local_path,omitempty"`
 	RemotePath string `gorm:"-:all" json:"remote_path,omitempty"`
+
+	Children []*VirtualFAT `gorm:"-:all" json:"children,omitempty"`
 }
 
 func (f *VirtualFAT) TableName() string {
