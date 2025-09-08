@@ -240,60 +240,43 @@ const FileManager = () => {
   };
 
   // 执行批量删除
-   const performBatchDelete = async () => {
-     const currentPath = getCurrentPath();
-     let totalSuccess = 0;
-     let totalFail = 0;
-     const errors = [];
+  const performBatchDelete = async () => {
+    const currentPath = getCurrentPath();
+    
+    // 构建所有选中项目的完整路径
+    const paths = selectedItems.map(item => {
+      return currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
+    });
 
-     // 为每个选中项目构建完整路径并逐个删除
-     for (const item of selectedItems) {
-       try {
-         const itemPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
-         
-         const response = await authFetch('/admin-api/file/action', {
-           method: 'POST',
-           headers: {
-             'Content-Type': 'application/json'
-           },
-           body: JSON.stringify({
-             action: 'delete',
-             path: itemPath
-           })
-         });
-         
-         if (response.ok) {
-           totalSuccess++;
-         } else {
-           totalFail++;
-           const errorData = await response.json().catch(() => ({}));
-           errors.push(`删除 "${item.name}" 失败: ${errorData.error || '未知错误'}`);
-         }
-       } catch (error) {
-         totalFail++;
-         errors.push(`删除 "${item.name}" 失败: ${error.message}`);
-       }
-     }
-
-     // 显示结果
-     if (totalSuccess > 0) {
-       message.success(`成功删除 ${totalSuccess} 个项目`);
-       // 刷新文件列表
-       handleFolderUpdate();
-       handleImageUpdate();
-       // 清空选中状态
-       clearSelection();
-       // 刷新当前页面
-       window.location.reload();
-     }
-     
-     if (totalFail > 0) {
-       message.error(`${totalFail} 个项目删除失败`);
-       if (errors.length > 0) {
-         console.error('删除错误详情:', errors);
-       }
-     }
-   };
+    try {
+      const response = await authFetch('/admin-api/file/action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          paths: paths
+        })
+      });
+      
+      if (response.ok) {
+        message.success(`成功删除 ${selectedItems.length} 个项目`);
+        // 刷新文件列表
+        handleFolderUpdate();
+        handleImageUpdate();
+        // 清空选中状态
+        clearSelection();
+        // 刷新当前页面
+        window.location.reload();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        message.error(`批量删除失败: ${errorData.error || '未知错误'}`);
+      }
+    } catch (error) {
+      message.error(`批量删除失败: ${error.message}`);
+    }
+  };
 
    // 批量移动
     const handleBatchMove = () => {
@@ -314,73 +297,75 @@ const FileManager = () => {
 
       const currentPath = getCurrentPath();
       const targetPath = getPathByFolderId(batchMoveTargetFolderId);
-      let totalSuccess = 0;
-      let totalFail = 0;
-      const errors = [];
-
-      // 为每个选中项目构建源路径和目标路径并逐个移动
-      for (const item of selectedItems) {
-        try {
-          const sourcePath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
-          const destinationPath = targetPath === '/' ? `/${item.name}` : `${targetPath}/${item.name}`;
-          
-          const response = await authFetch('/admin-api/file/action', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              action: 'move',
-              path: sourcePath,
-              dst: destinationPath
-            })
-          });
-          
-          if (response.ok) {
-            totalSuccess++;
-          } else {
-            totalFail++;
-            const errorData = await response.json().catch(() => ({}));
-            errors.push(`移动 "${item.name}" 失败: ${errorData.error || '未知错误'}`);
-          }
-        } catch (error) {
-          totalFail++;
-          errors.push(`移动 "${item.name}" 失败: ${error.message}`);
-        }
-      }
-
-      // 显示结果
-      if (totalSuccess > 0) {
-        message.success(`成功移动 ${totalSuccess} 个项目`);
-        // 刷新文件列表
-        handleFolderUpdate();
-        handleImageUpdate();
-        // 清空选中状态
-        clearSelection();
-        // 关闭模态框
-        setBatchMoveModalVisible(false);
-        setBatchMoveTargetFolderId(null);
-        // 刷新当前页面
-        window.location.reload();
-      }
       
-      if (totalFail > 0) {
-        message.error(`${totalFail} 个项目移动失败`);
-        if (errors.length > 0) {
-          console.error('移动错误详情:', errors);
+      // 构建所有选中项目的源路径和目标路径
+      const moveOperations = selectedItems.map(item => {
+        const sourcePath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
+        const destinationPath = targetPath === '/' ? `/${item.name}` : `${targetPath}/${item.name}`;
+        return {
+          src: sourcePath,
+          dst: destinationPath
+        };
+      });
+
+      try {
+        const response = await authFetch('/admin-api/file/action', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'move',
+            paths: moveOperations
+          })
+        });
+        
+        if (response.ok) {
+          message.success(`成功移动 ${selectedItems.length} 个项目`);
+          // 刷新文件列表
+          handleFolderUpdate();
+          handleImageUpdate();
+          // 清空选中状态
+          clearSelection();
+          // 关闭模态框
+          setBatchMoveModalVisible(false);
+          setBatchMoveTargetFolderId(null);
+          // 刷新当前页面
+          window.location.reload();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          message.error(`批量移动失败: ${errorData.error || '未知错误'}`);
         }
+      } catch (error) {
+        message.error(`批量移动失败: ${error.message}`);
       }
     };
 
     // 转换文件夹树为Tree组件数据
-    const convertToTreeData = (folders) => {
-      return folders.map(folder => ({
+  const convertToTreeData = (treeData) => {
+    // 如果是单个对象（根节点），处理其children
+    if (treeData && !Array.isArray(treeData)) {
+      if (treeData.children && treeData.children.length > 0) {
+        return treeData.children.map(folder => ({
+          title: folder.name,
+          key: folder.id.toString(),
+          icon: <FolderOutlined />,
+          children: folder.children && folder.children.length > 0 ? convertToTreeData(folder.children) : undefined
+        }));
+      }
+      return [];
+    }
+    // 如果是数组，按原逻辑处理
+    if (Array.isArray(treeData)) {
+      return treeData.map(folder => ({
         title: folder.name,
         key: folder.id.toString(),
         icon: <FolderOutlined />,
         children: folder.children && folder.children.length > 0 ? convertToTreeData(folder.children) : undefined
       }));
-    };
+    }
+    return [];
+  };
 
   // 处理新建文件夹
   const handleCreateFolder = async () => {
