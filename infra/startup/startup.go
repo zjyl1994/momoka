@@ -78,7 +78,7 @@ func Startup() (err error) {
 		return err
 	}
 
-	err = vars.Database.AutoMigrate(&common.Image{}, &common.ImageFolder{}, &common.Setting{}, &common.S3Task{}, &common.VirtualFAT{})
+	err = vars.Database.AutoMigrate(&common.Setting{}, &common.S3Task{}, &common.VirtualFAT{})
 	if err != nil {
 		return err
 	}

@@ -55,30 +55,19 @@ func Run(listenAddr string) error {
 			})
 		},
 	}))
-	adminAPI.Post("/folder", adminapi.CreateFolderHandler)
-	adminAPI.Get("/folder", adminapi.GetFolderHandler)
-	adminAPI.Patch("/folder", adminapi.UpdateFolderHandler)
-	adminAPI.Delete("/folder", adminapi.DeleteFolderHandler)
-	adminAPI.Get("/folder/tree", adminapi.GetFolderTreeHandler)
-	adminAPI.Post("/image", adminapi.CreateImageHandler)
-	adminAPI.Get("/image", adminapi.GetImageHandler)
-	adminAPI.Delete("/image", adminapi.DeleteImageHandler)
-	adminAPI.Patch("/image", adminapi.UpdateImageHandler)
-	adminAPI.Get("/image/all", adminapi.GetAllImageHandler)
-	adminAPI.Delete("/image/batch", adminapi.BatchDeleteImageHandler)
-	adminAPI.Patch("/image/batch", adminapi.BatchMoveImageHandler)
-	adminAPI.Delete("/folder/batch", adminapi.BatchDeleteFolderHandler)
-	adminAPI.Patch("/folder/batch", adminapi.BatchMoveFolderHandler)
 
+	// 设置
 	adminAPI.Get("/setting", adminapi.ListSettingHandler)
 	adminAPI.Patch("/setting", adminapi.UpdateSettingHandler)
 	adminAPI.Get("/readonly-setting", adminapi.GetReadonlySettingHandler)
+	// 统计
 	adminAPI.Get("/dashboard", adminapi.DashboardDataHandler)
+	// 备份
 	adminAPI.Post("/backup/generate", adminapi.GenerateBackupHandler)
 	adminAPI.Post("/backup/restore", adminapi.RestoreBackupHandler)
 	adminAPI.Get("/backup", adminapi.ListBackupHandler)
 	adminAPI.Delete("/backup", adminapi.DeleteBackupHandler)
-	// 路径管理相关路由
+	// 文件管理
 	adminAPI.Post("/file/upload", adminapi.VFATUploadHandler)
 	adminAPI.Post("/file/action", adminapi.VFATActionHandler)
 	adminAPI.Get("/file/list", adminapi.VFATListHandler)

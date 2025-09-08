@@ -524,14 +524,30 @@ func (s *virtualFATService) GetChildren(db *gorm.DB, pathStr string) ([]*common.
 	return children, nil
 }
 
-func (s *virtualFATService) Dashboard() (fileCount int64, fileSize int64, err error) {
+type VirtualFATStatistics struct {
+	FileCount   int64
+	FileSize    int64
+	FolderCount int64
+}
+
+func (s *virtualFATService) Statistics() (*VirtualFATStatistics, error) {
+	var fileCount int64
 	if err := vars.Database.Model(&common.VirtualFAT{}).Where("is_folder = ?", false).Count(&fileCount).Error; err != nil {
-		return 0, 0, err
+		return nil, err
 	}
+	var folderCount int64
+	if err := vars.Database.Model(&common.VirtualFAT{}).Where("is_folder = ?", true).Count(&folderCount).Error; err != nil {
+		return nil, err
+	}
+	var fileSize int64
 	if err := vars.Database.Model(&common.VirtualFAT{}).Where("is_folder = ?", false).Select("sum(size)").Scan(&fileSize).Error; err != nil {
-		return 0, 0, err
+		return nil, err
 	}
-	return fileCount, fileSize, nil
+	return &VirtualFATStatistics{
+		FileCount:   fileCount,
+		FileSize:    fileSize,
+		FolderCount: folderCount,
+	}, nil
 }
 
 func (s *virtualFATService) Download(file *common.VirtualFAT) error {

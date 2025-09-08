@@ -16,8 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
 )
 
@@ -122,20 +120,6 @@ func HttpDownload(url, filePath string) error {
 	defer f.Close()
 	_, err = io.Copy(f, resp.Body)
 	return err
-}
-
-func GetImageURL(c *fiber.Ctx, img *common.Image) (string, error) {
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_FILE, img.ID})
-	if err != nil {
-		return "", err
-	}
-	var baseUrl string
-	if vars.BaseURL != "" {
-		baseUrl = vars.BaseURL
-	} else {
-		baseUrl = c.BaseURL()
-	}
-	return baseUrl + "/i/" + imageHashId + img.ExtName, nil
 }
 
 func GetFolderForDashboard(path string) (int64, int64, error) {
