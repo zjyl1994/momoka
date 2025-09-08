@@ -298,14 +298,9 @@ const FileManager = () => {
       const currentPath = getCurrentPath();
       const targetPath = getPathByFolderId(batchMoveTargetFolderId);
       
-      // 构建所有选中项目的源路径和目标路径
-      const moveOperations = selectedItems.map(item => {
-        const sourcePath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
-        const destinationPath = targetPath === '/' ? `/${item.name}` : `${targetPath}/${item.name}`;
-        return {
-          src: sourcePath,
-          dst: destinationPath
-        };
+      // 构建所有选中项目的源路径
+      const sourcePaths = selectedItems.map(item => {
+        return currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
       });
 
       try {
@@ -316,7 +311,8 @@ const FileManager = () => {
           },
           body: JSON.stringify({
             action: 'move',
-            paths: moveOperations
+            paths: sourcePaths,
+            dst: targetPath
           })
         });
         
@@ -480,24 +476,26 @@ const FileManager = () => {
             >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               {/* 面包屑导航 */}
-              <Breadcrumb>
-                {folderPath.map((folder, index) => (
-                  <Breadcrumb.Item
-                    key={folder.id}
-                    onClick={() => index < folderPath.length - 1 && handleBreadcrumbClick(folder.id)}
-                    style={{
-                      cursor: index < folderPath.length - 1 ? 'pointer' : 'default',
-                      color: index < folderPath.length - 1 ? '#1890ff' : 'inherit'
-                    }}
-                  >
-                    {index === 0 ? (
-                      <><HomeOutlined /> {folder.name}</>
-                    ) : (
-                      <><FolderOutlined /> {folder.name}</>
-                    )}
-                  </Breadcrumb.Item>
-                ))}
-              </Breadcrumb>
+              <Breadcrumb
+                items={folderPath.map((folder, index) => ({
+                  key: folder.id,
+                  title: (
+                    <span
+                      onClick={() => index < folderPath.length - 1 && handleBreadcrumbClick(folder.id)}
+                      style={{
+                        cursor: index < folderPath.length - 1 ? 'pointer' : 'default',
+                        color: index < folderPath.length - 1 ? '#1890ff' : 'inherit'
+                      }}
+                    >
+                      {index === 0 ? (
+                        <><HomeOutlined /> {folder.name}</>
+                      ) : (
+                        <><FolderOutlined /> {folder.name}</>
+                      )}
+                    </span>
+                  )
+                }))}
+              />
             </div>
 
             {/* 右侧操作按钮 */}
