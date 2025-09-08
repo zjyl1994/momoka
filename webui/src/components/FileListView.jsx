@@ -36,45 +36,90 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
 
+  // 在文件夹树中递归查找指定ID的文件夹
+  const findFolderInTree = (folderId, tree) => {
+    for (const folder of tree) {
+      if (folder.id === folderId) {
+        return folder;
+      }
+      if (folder.children && folder.children.length > 0) {
+        const found = findFolderInTree(folderId, folder.children);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+
+  // 根据文件夹ID构建路径字符串
+  const getPathByFolderId = (folderId) => {
+    if (folderId === 0) {
+      return '/';
+    }
+    
+    const folder = findFolderInTree(folderId, folderTree || []);
+    if (!folder) {
+      return '/';
+    }
+    
+    // 递归构建路径
+    const buildPath = (currentFolder, tree) => {
+      const path = [currentFolder.name];
+      if (currentFolder.parent_id !== 0) {
+        const parent = findFolderInTree(currentFolder.parent_id, tree);
+        if (parent) {
+          path.unshift(...buildPath(parent, tree));
+        }
+      }
+      return path;
+    };
+    
+    const pathArray = buildPath(folder, folderTree || []);
+    return '/' + pathArray.join('/');
+  };
+
   // Fetch folder contents (both folders and images)
   const fetchFolderContents = async (folderIdParam = folderId) => {
     setLoading(true);
     try {
-      const response = await authFetch(`/admin-api/folder?id=${folderIdParam}`);
+      // 构建当前路径
+      const currentPath = getPathByFolderId(folderIdParam);
+      const response = await authFetch(`/admin-api/file/list?path=${encodeURIComponent(currentPath)}`);
       if (response.ok) {
         const data = await response.json();
         
-        // Combine folders and images into a single list
-        const folders = (data.folders || []).map(folder => ({
-          ...folder,
-          type: 'folder',
-          key: `folder-${folder.id}`,
-          name: folder.name,
-          size: '-',
-          created_at: folder.create_time
-        }));
-        
-        const images = (data.images || []).map(image => ({
-          ...image,
-          type: 'image',
-          key: `image-${image.id}`,
-          name: image.file_name,
-          size: image.file_size,
-          created_at: image.create_time
-        }));
+        // 处理文件列表数据
+        const allItems = (data.files || []).map((item, index) => {
+          const isFolder = item.type === 'directory';
+          return {
+            ...item,
+            type: isFolder ? 'folder' : 'image',
+            key: `${isFolder ? 'folder' : 'image'}-${index}`,
+            name: item.name,
+            size: isFolder ? '-' : item.size,
+            created_at: item.modified_time,
+            // 为了兼容现有代码，添加id字段（使用name作为唯一标识）
+            id: item.name,
+            file_name: item.name,
+            file_size: item.size,
+            create_time: item.modified_time,
+            url: isFolder ? null : item.url
+          };
+        });
         
         // Sort: folders first, then images, both alphabetically
-        const allItems = [...folders, ...images].sort((a, b) => {
+        const sortedItems = allItems.sort((a, b) => {
           if (a.type !== b.type) {
             return a.type === 'folder' ? -1 : 1;
           }
           return a.name.localeCompare(b.name);
         });
         
-        setItems(allItems);
+        setItems(sortedItems);
         // 通知父组件当前的items数据
         if (onItemsChange) {
-          onItemsChange(allItems);
+          onItemsChange(sortedItems);
         }
       } else {
         message.error('获取文件列表失败');

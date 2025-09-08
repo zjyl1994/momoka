@@ -33,7 +33,7 @@ const FileManager = () => {
   // 获取文件夹树
   const fetchFolderTree = async () => {
     try {
-      const response = await authFetch('/admin-api/folder/tree');
+      const response = await authFetch('/admin-api/file/tree');
       if (response.ok) {
         const data = await response.json();
         setFolderTree(data);
@@ -86,6 +86,41 @@ const FileManager = () => {
       }
     }
     return null;
+  };
+
+  // 构建当前路径字符串
+  const getCurrentPath = () => {
+    if (folderPath.length === 0 || folderPath[0].id === 0) {
+      return '/';
+    }
+    return folderPath.slice(1).map(folder => folder.name).join('/');
+  };
+
+  // 根据文件夹ID构建路径字符串
+  const getPathByFolderId = (folderId) => {
+    if (folderId === 0) {
+      return '/';
+    }
+    
+    const folder = findFolderInTree(folderId, folderTree);
+    if (!folder) {
+      return '/';
+    }
+    
+    // 递归构建路径
+    const buildPath = (currentFolder, tree) => {
+      const path = [currentFolder.name];
+      if (currentFolder.parent_id !== 0) {
+        const parent = findFolderInTree(currentFolder.parent_id, tree);
+        if (parent) {
+          path.unshift(...buildPath(parent, tree));
+        }
+      }
+      return path;
+    };
+    
+    const pathArray = buildPath(folder, folderTree);
+    return '/' + pathArray.join('/');
   };
 
   useEffect(() => {
@@ -206,55 +241,37 @@ const FileManager = () => {
 
   // 执行批量删除
    const performBatchDelete = async () => {
-     // 按类型分组
-     const imageItems = selectedItems.filter(item => item.type === 'image');
-     const folderItems = selectedItems.filter(item => item.type === 'folder');
-     
+     const currentPath = getCurrentPath();
      let totalSuccess = 0;
      let totalFail = 0;
      const errors = [];
 
-     // 批量删除图片
-     if (imageItems.length > 0) {
+     // 为每个选中项目构建完整路径并逐个删除
+     for (const item of selectedItems) {
        try {
-         const imageIds = imageItems.map(item => item.id);
-         const idsParam = imageIds.join(',');
-         const response = await authFetch(`/admin-api/image/batch?ids=${encodeURIComponent(idsParam)}`, {
-           method: 'DELETE'
+         const itemPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
+         
+         const response = await authFetch('/admin-api/file/action', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json'
+           },
+           body: JSON.stringify({
+             action: 'delete',
+             path: itemPath
+           })
          });
          
          if (response.ok) {
-           totalSuccess += imageItems.length;
+           totalSuccess++;
          } else {
-           totalFail += imageItems.length;
+           totalFail++;
            const errorData = await response.json().catch(() => ({}));
-           errors.push(`图片批量删除失败: ${errorData.error || '未知错误'}`);
+           errors.push(`删除 "${item.name}" 失败: ${errorData.error || '未知错误'}`);
          }
        } catch (error) {
-         totalFail += imageItems.length;
-         errors.push(`图片批量删除失败: ${error.message}`);
-       }
-     }
-
-     // 批量删除文件夹
-     if (folderItems.length > 0) {
-       try {
-         const folderIds = folderItems.map(item => item.id);
-         const idsParam = folderIds.join(',');
-         const response = await authFetch(`/admin-api/folder/batch?ids=${encodeURIComponent(idsParam)}`, {
-           method: 'DELETE'
-         });
-         
-         if (response.ok) {
-           totalSuccess += folderItems.length;
-         } else {
-           totalFail += folderItems.length;
-           const errorData = await response.json().catch(() => ({}));
-           errors.push(`文件夹批量删除失败: ${errorData.error || '未知错误'}`);
-         }
-       } catch (error) {
-         totalFail += folderItems.length;
-         errors.push(`文件夹批量删除失败: ${error.message}`);
+         totalFail++;
+         errors.push(`删除 "${item.name}" 失败: ${error.message}`);
        }
      }
 
@@ -295,67 +312,40 @@ const FileManager = () => {
         return;
       }
 
-      // 按类型分组
-      const imageItems = selectedItems.filter(item => item.type === 'image');
-      const folderItems = selectedItems.filter(item => item.type === 'folder');
-      
+      const currentPath = getCurrentPath();
+      const targetPath = getPathByFolderId(batchMoveTargetFolderId);
       let totalSuccess = 0;
       let totalFail = 0;
       const errors = [];
 
-      // 批量移动图片
-      if (imageItems.length > 0) {
+      // 为每个选中项目构建源路径和目标路径并逐个移动
+      for (const item of selectedItems) {
         try {
-          const imageIds = imageItems.map(item => item.id);
-          const response = await authFetch('/admin-api/image/batch', {
-            method: 'PATCH',
+          const sourcePath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
+          const destinationPath = targetPath === '/' ? `/${item.name}` : `${targetPath}/${item.name}`;
+          
+          const response = await authFetch('/admin-api/file/action', {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              ids: imageIds,
-              folder_id: batchMoveTargetFolderId
+              action: 'move',
+              path: sourcePath,
+              dst: destinationPath
             })
           });
           
           if (response.ok) {
-            totalSuccess += imageItems.length;
+            totalSuccess++;
           } else {
-            totalFail += imageItems.length;
+            totalFail++;
             const errorData = await response.json().catch(() => ({}));
-            errors.push(`图片批量移动失败: ${errorData.error || '未知错误'}`);
+            errors.push(`移动 "${item.name}" 失败: ${errorData.error || '未知错误'}`);
           }
         } catch (error) {
-          totalFail += imageItems.length;
-          errors.push(`图片批量移动失败: ${error.message}`);
-        }
-      }
-
-      // 批量移动文件夹
-      if (folderItems.length > 0) {
-        try {
-          const folderIds = folderItems.map(item => item.id);
-          const response = await authFetch('/admin-api/folder/batch', {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              ids: folderIds,
-              parent_id: batchMoveTargetFolderId
-            })
-          });
-          
-          if (response.ok) {
-            totalSuccess += folderItems.length;
-          } else {
-            totalFail += folderItems.length;
-            const errorData = await response.json().catch(() => ({}));
-            errors.push(`文件夹批量移动失败: ${errorData.error || '未知错误'}`);
-          }
-        } catch (error) {
-          totalFail += folderItems.length;
-          errors.push(`文件夹批量移动失败: ${error.message}`);
+          totalFail++;
+          errors.push(`移动 "${item.name}" 失败: ${error.message}`);
         }
       }
 
@@ -400,15 +390,17 @@ const FileManager = () => {
     }
 
     try {
-      const response = await authFetch('/admin-api/folder', {
+      const currentPath = getCurrentPath();
+      const newFolderPath = currentPath === '/' ? `/${newFolderName.trim()}` : `${currentPath}/${newFolderName.trim()}`;
+      
+      const response = await authFetch('/admin-api/file/action', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          name: newFolderName.trim(),
-          parent_id: selectedFolderId,
-          public: newFolderPublic
+          action: 'mkdir',
+          dst: newFolderPath
         })
       });
 
@@ -441,17 +433,17 @@ const FileManager = () => {
     let successCount = 0;
     let failCount = 0;
 
+    // 获取当前路径
+    const currentPath = getCurrentPath();
+
     for (const file of imageFiles) {
       try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('folder_id', selectedFolderId);
+        formData.append('path', currentPath);
 
-        const response = await authFetch('/admin-api/image', {
+        const response = await authFetch('/admin-api/file/upload', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
           body: formData
         });
 
