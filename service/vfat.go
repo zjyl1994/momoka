@@ -540,7 +540,7 @@ func (s *virtualFATService) Statistics() (*VirtualFATStatistics, error) {
 		return nil, err
 	}
 	var fileSize int64
-	if err := vars.Database.Model(&common.VirtualFAT{}).Where("is_folder = ?", false).Select("sum(file_size)").Scan(&fileSize).Error; err != nil {
+	if err := vars.Database.Model(&common.VirtualFAT{}).Where("is_folder = ?", false).Select("COALESCE(SUM(file_size),0)").Scan(&fileSize).Error; err != nil {
 		return nil, err
 	}
 	return &VirtualFATStatistics{
