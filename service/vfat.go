@@ -40,13 +40,18 @@ func (s *virtualFATService) Get(id int64) (*common.VirtualFAT, error) {
 }
 
 func (s *virtualFATService) fillModel(m *common.VirtualFAT) error {
-	m.RemotePath = m.Hash + m.ExtName
-	m.LocalPath = utils.DataPath("cache", m.Hash[0:2], m.Hash[2:4], m.Hash+m.ExtName)
-	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_FILE, m.ID})
-	if err != nil {
-		return err
+	if !m.IsFolder {
+		m.RemotePath = m.Hash + m.ExtName
+		m.LocalPath = utils.DataPath("cache", m.Hash[0:2], m.Hash[2:4], m.Hash+m.ExtName)
+		imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_FILE, m.ID})
+		if err != nil {
+			return err
+		}
+		m.URL = "/i/" + imageHashId + m.ExtName
 	}
-	m.URL = "/i/" + imageHashId + m.ExtName
+	if m.Children == nil {
+		m.Children = []*common.VirtualFAT{}
+	}
 	return nil
 }
 
@@ -507,17 +512,15 @@ func (s *virtualFATService) GetChildren(db *gorm.DB, pathStr string) ([]*common.
 		parentID = parentPath.ID
 	}
 
-	var children []*common.VirtualFAT
+	children := []*common.VirtualFAT{}
 	if err := db.Where("parent_id = ?", parentID).Find(&children).Error; err != nil {
 		return nil, err
 	}
 
 	// 为文件类型的子项填充模型信息
 	for _, child := range children {
-		if !child.IsFolder {
-			if err := s.fillModel(child); err != nil {
-				return nil, err
-			}
+		if err := s.fillModel(child); err != nil {
+			return nil, err
 		}
 	}
 

@@ -56,7 +56,7 @@ func VFATActionHandler(c *fiber.Ctx) error {
 	}
 	switch strings.ToLower(req.Action) {
 	case "delete":
-		removeList := make([]string, 0)
+		var removeList []string
 		if len(req.Paths) > 0 {
 			removeList = req.Paths
 		} else {
@@ -78,7 +78,7 @@ func VFATActionHandler(c *fiber.Ctx) error {
 			})
 		}
 	case "move":
-		moveList := make([]string, 0)
+		var moveList []string
 		if len(req.Paths) > 0 {
 			moveList = req.Paths
 		} else {
