@@ -33,7 +33,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 		}
 
 		// 检查库里有没有，防止穿透到S3上产生404请求费用
-		imgObj, err := service.LogicFileService.Get(imageId[1])
+		imgObj, err := service.VirtualFATService.Get(imageId[1])
 		if err != nil {
 			return "", err
 		}
@@ -44,7 +44,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 		// 加载图片实际路径
 		if !utils.FileExists(imgObj.LocalPath) {
 			// 从S3下载
-			err = service.LogicFileService.Download(imgObj)
+			err = service.VirtualFATService.Download(imgObj)
 			if err != nil {
 				return "", err
 			}

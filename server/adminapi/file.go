@@ -21,7 +21,7 @@ func UploadFileHandler(c *fiber.Ctx) error {
 	}
 	path += file.Filename
 
-	logicFile, err := service.LogicFileService.Save(file, path)
+	logicFile, err := service.VirtualFATService.Save(file, path)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "save file failed",

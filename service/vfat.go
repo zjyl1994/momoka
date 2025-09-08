@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"mime/multipart"
 	"os"
@@ -531,4 +532,12 @@ func (s *virtualFATService) Dashboard() (fileCount int64, fileSize int64, err er
 		return 0, 0, err
 	}
 	return fileCount, fileSize, nil
+}
+
+func (s *virtualFATService) Download(file *common.VirtualFAT) error {
+	err := s.fillModel(file)
+	if err != nil {
+		return err
+	}
+	return StorageService.Download(context.Background(), file.RemotePath, file.LocalPath)
 }
