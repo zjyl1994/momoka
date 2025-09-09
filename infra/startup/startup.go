@@ -82,9 +82,7 @@ func Startup() (err error) {
 	if err != nil {
 		return err
 	}
-	adminName, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_USER, func() (string, string, error) {
-		return common.DEFAULT_ADMIN_USER, common.DEFAULT_ADMIN_USER, nil
-	})
+	adminName, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_USER, service.StringForNotExisting(common.DEFAULT_ADMIN_USER))
 	if err != nil {
 		return err
 	}
@@ -106,10 +104,7 @@ func Startup() (err error) {
 		logrus.Infoln("Create Admin Password::", adminPass)
 	}
 	// init secret if not exists
-	secret, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_SYSTEM_RAND_SECRET, func() (string, string, error) {
-		randStr := utils.RandStr(32)
-		return randStr, randStr, nil
-	})
+	secret, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_SYSTEM_RAND_SECRET, service.StringForNotExisting(utils.RandStr(32)))
 	if err != nil {
 		return err
 	}

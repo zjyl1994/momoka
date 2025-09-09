@@ -88,3 +88,9 @@ func (s *settingService) BulkSet(settings map[string]string) error {
 		return nil
 	})
 }
+
+func StringForNotExisting(s string) func() (string, string, error) {
+	return func() (string, string, error) {
+		return s, s, nil
+	}
+}
