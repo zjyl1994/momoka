@@ -81,15 +81,23 @@ func (s *virtualFATService) Save(file *multipart.FileHeader, logicPath string) (
 	}
 
 	err = vars.Database.Transaction(func(tx *gorm.DB) (err error) {
-		err = S3TaskService.Add(tx, []*common.S3Task{
-			{
-				Action:     common.S3TASK_ACTION_UPLOAD,
-				LocalPath:  m.LocalPath,
-				RemotePath: m.RemotePath,
-			},
-		})
+		// 检查文件是否已存在
+		var hashCount int64
+		err = tx.Model(&common.VirtualFAT{}).Where("hash = ?", m.Hash).Count(&hashCount).Error
 		if err != nil {
 			return err
+		}
+		if hashCount == 0 {
+			err = S3TaskService.Add(tx, []*common.S3Task{
+				{
+					Action:     common.S3TASK_ACTION_UPLOAD,
+					LocalPath:  m.LocalPath,
+					RemotePath: m.RemotePath,
+				},
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		baseDir := filepath.Dir(logicPath)
@@ -200,14 +208,22 @@ func (s *virtualFATService) deleteFile(fileObj *common.VirtualFAT, pathStr strin
 		if err != nil {
 			return err
 		}
-		err = S3TaskService.Add(tx, []*common.S3Task{
-			{
-				Action:     common.S3TASK_ACTION_DELETE,
-				RemotePath: fileObj.RemotePath,
-			},
-		})
+		// 检查文件是否已存在
+		var hashCount int64
+		err = tx.Model(&common.VirtualFAT{}).Where("hash = ?", fileObj.Hash).Count(&hashCount).Error
 		if err != nil {
 			return err
+		}
+		if hashCount == 0 {
+			err = S3TaskService.Add(tx, []*common.S3Task{
+				{
+					Action:     common.S3TASK_ACTION_DELETE,
+					RemotePath: fileObj.RemotePath,
+				},
+			})
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
