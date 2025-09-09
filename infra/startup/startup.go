@@ -82,33 +82,43 @@ func Startup() (err error) {
 	if err != nil {
 		return err
 	}
-	err = service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_USER, common.DEFAULT_ADMIN_USER)
+	adminName, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_USER, func() (string, string, error) {
+		return common.DEFAULT_ADMIN_USER, common.DEFAULT_ADMIN_USER, nil
+	})
 	if err != nil {
 		return err
 	}
-	defaultPass, err := bcrypt.GenerateFromPassword([]byte(common.DEFAULT_ADMIN_PASSWORD), bcrypt.DefaultCost)
-	if err != nil {
-		return err
+	if firstCreate {
+		logrus.Infoln("Create Admin User::", adminName)
 	}
-	err = service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_PASSWORD, string(defaultPass))
-	if err != nil {
-		return err
-	}
-
-	// init secret if not exists
-	secret, err := service.SettingService.Get(common.SETTING_KEY_SYSTEM_RAND_SECRET)
-	if err != nil {
-		return err
-	}
-	initialized = secret != ""
-	if !initialized {
-		secret = utils.RandStr(32)
-		err = service.SettingService.Set(common.SETTING_KEY_SYSTEM_RAND_SECRET, secret)
+	adminPass, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_ADMIN_PASSWORD, func() (showData, writeData string, err error) {
+		randPass := utils.RandStr(8)
+		hashedPass, err := bcrypt.GenerateFromPassword([]byte(randPass), bcrypt.DefaultCost)
 		if err != nil {
-			return err
+			return "", "", err
 		}
+		return randPass, string(hashedPass), nil
+	})
+	if err != nil {
+		return err
 	}
-	vars.Secret = secret
+	if firstCreate {
+		logrus.Infoln("Create Admin Password::", adminPass)
+	}
+	// init secret if not exists
+	secret, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_SYSTEM_RAND_SECRET, func() (string, string, error) {
+		randStr := utils.RandStr(32)
+		return randStr, randStr, nil
+	})
+	if err != nil {
+		return err
+	}
+	if firstCreate {
+		logrus.Debugln("Create System Rand Secret::", secret)
+	} else {
+		initialized = true
+		vars.Secret = secret
+	}
 
 	hd := hashids.NewData()
 	hd.Salt = vars.Secret

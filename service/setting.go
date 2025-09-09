@@ -49,21 +49,29 @@ func (s *settingService) List() (map[string]string, error) {
 	return result, nil
 }
 
-func (s *settingService) SetIfNotExists(name, data string) error {
+func (s *settingService) SetIfNotExists(name string, gen func() (showData, writeData string, err error)) (string, bool, error) {
 	var setting common.Setting
 	err := vars.Database.Where("name = ?", name).First(&setting).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			showData, writeData, e := gen()
+			if e != nil {
+				return "", false, e
+			}
 			// 如果记录不存在则创建新记录
 			setting = common.Setting{
 				Name: name,
-				Data: data,
+				Data: writeData,
 			}
-			return vars.Database.Create(&setting).Error
+			err = vars.Database.Create(&setting).Error
+			if err != nil {
+				return "", false, err
+			}
+			return showData, true, nil
 		}
-		return err
+		return "", false, err
 	}
-	return nil
+	return setting.Data, false, nil
 }
 
 func (s *settingService) BulkSet(settings map[string]string) error {

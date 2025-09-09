@@ -22,8 +22,7 @@ const (
 )
 
 const (
-	DEFAULT_ADMIN_USER     = "admin"
-	DEFAULT_ADMIN_PASSWORD = "123456"
+	DEFAULT_ADMIN_USER = "admin"
 )
 
 const (
