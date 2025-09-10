@@ -16,7 +16,7 @@ const Login = () => {
   // Set page title
   useEffect(() => {
     document.title = '登录 - Momoka 图床';
-    
+
     // Add cap widget event listener
     const capWidget = document.getElementById('cap');
     if (capWidget) {
@@ -25,7 +25,7 @@ const Login = () => {
         setCapToken(token);
       };
       capWidget.addEventListener('solve', handleSolve);
-      
+
       return () => {
         capWidget.removeEventListener('solve', handleSolve);
       };
@@ -37,7 +37,7 @@ const Login = () => {
       setError('请完成验证码验证');
       return;
     }
-    
+
     setLoading(true);
     setError(''); // 清除之前的错误信息
     try {
@@ -64,7 +64,7 @@ const Login = () => {
               <h1>Momoka 图床</h1>
               <p>请登录您的账户</p>
             </div>
-            
+
             {error && (
               <Alert
                 message={error}
@@ -75,7 +75,7 @@ const Login = () => {
                 onClose={() => setError('')}
               />
             )}
-            
+
             <Form
               name="login"
               className="login-form"
@@ -115,12 +115,12 @@ const Login = () => {
 
               <Form.Item>
                 <Form.Item name="remember" valuePropName="checked" noStyle>
-                  <Checkbox>记住我</Checkbox>
+                  <Checkbox className="remember-checkbox">记住我</Checkbox>
                 </Form.Item>
               </Form.Item>
 
               <Form.Item>
-                <cap-widget id="cap" data-cap-api-endpoint="/api/cap/"></cap-widget>
+                <cap-widget id="cap" data-cap-api-endpoint="/api/cap/" style={{ '--cap-border-radius': '6px', '--cap-widget-width': "100%",'--cap-border-color':'#d9d9d9' }}></cap-widget>
               </Form.Item>
 
               <Form.Item>
@@ -135,7 +135,7 @@ const Login = () => {
                 </Button>
               </Form.Item>
             </Form>
-            
+
             <div className="login-footer">
               <p>请使用管理员账户登录</p>
             </div>
