@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/zjyl1994/cap-go"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/service"
@@ -18,10 +19,18 @@ func LoginHandler(c *fiber.Ctx) error {
 		Password  string `json:"password"`
 		Remember  bool   `json:"remember"`
 		SetCookie bool   `json:"set_cookie"`
+		CapToken  string `json:"cap_token"`
 	}
 	if err := c.BodyParser(&loginReq); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "无效的请求参数",
+		})
+	}
+
+	// 验证CAP令牌
+	if loginReq.CapToken == "" || !vars.CapInstance.ValidateToken(loginReq.CapToken, false) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "CAP令牌验证失败",
 		})
 	}
 
@@ -98,4 +107,19 @@ func LoginHandler(c *fiber.Ctx) error {
 		"token": t,
 		"type":  "Bearer",
 	})
+}
+
+func CreateChallenge(c *fiber.Ctx) error {
+	challenge := vars.CapInstance.CreateChallenge(nil)
+	return c.JSON(challenge)
+}
+
+func RedeemChallenge(c *fiber.Ctx) error {
+	var body cap.Solution
+	err := c.BodyParser(&body)
+	if err != nil {
+		return err
+	}
+	resp := vars.CapInstance.RedeemChallenge(&body)
+	return c.JSON(resp)
 }

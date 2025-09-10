@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/speps/go-hashids"
+	"github.com/zjyl1994/cap-go"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +23,7 @@ var (
 	AutoCleanItems int
 	BootTime       time.Time
 	BaseURL        string
+	CapInstance    cap.ICap
 )
 
 type S3Conf struct {

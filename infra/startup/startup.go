@@ -12,6 +12,7 @@ import (
 	gorm_logrus "github.com/onrik/gorm-logrus"
 	"github.com/sirupsen/logrus"
 	"github.com/speps/go-hashids"
+	"github.com/zjyl1994/cap-go"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
@@ -59,6 +60,8 @@ func Startup() (err error) {
 	if err != nil {
 		return err
 	}
+
+	vars.CapInstance = cap.NewCap(utils.NewFreeCacheStorage(100 * 1024))
 
 	vars.DataPath = os.Getenv("MOMOKA_DATA_PATH")
 	err = os.MkdirAll(vars.DataPath, 0755)

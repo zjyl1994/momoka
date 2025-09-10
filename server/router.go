@@ -44,6 +44,8 @@ func Run(listenAddr string) error {
 			})
 		},
 	}), api.LoginHandler)
+	apiGroup.Post("/cap/challenge", api.CreateChallenge)
+	apiGroup.Post("/cap/redeem", api.RedeemChallenge)
 
 	adminAPI := app.Group("/admin-api", jwtware.New(jwtware.Config{
 		SigningKey:  jwtware.SigningKey{JWTAlg: jwt.SigningMethodHS256.Alg(), Key: []byte(vars.Secret)},
