@@ -56,6 +56,9 @@ func Run(listenAddr string) error {
 				"error": "密钥不可用或已过期",
 			})
 		},
+		Filter: func(c *fiber.Ctx) bool {
+			return vars.SkipAuth
+		},
 	}))
 
 	// 设置

@@ -24,6 +24,7 @@ var (
 	BootTime       time.Time
 	BaseURL        string
 	CapInstance    cap.ICap
+	SkipAuth       bool
 )
 
 type S3Conf struct {

@@ -33,6 +33,8 @@ func Startup() (err error) {
 		logrus.Debugln("Momoka in DEBUG mode.")
 	}
 
+	vars.SkipAuth, _ = strconv.ParseBool(os.Getenv("MOMOKA_SKIP_AUTH"))
+
 	if val, e := exec.LookPath("cwebp"); e == nil {
 		vars.CwebpBin = val
 	}
