@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (username, password, remember = false) => {
+  const login = async (username, password, remember = false, capToken = '') => {
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }) => {
           username,
           password,
           remember,
+          cap_token: capToken,
           set_cookie: false // 使用localStorage而不是cookie
         }),
       });

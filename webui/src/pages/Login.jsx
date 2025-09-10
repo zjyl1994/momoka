@@ -3,24 +3,45 @@ import { Form, Input, Button, Card, message, Spin, Checkbox, Alert } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import '@cap.js/widget';
 import './Login.css';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [capToken, setCapToken] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   // Set page title
   useEffect(() => {
     document.title = '登录 - Momoka 图床';
+    
+    // Add cap widget event listener
+    const capWidget = document.getElementById('cap');
+    if (capWidget) {
+      const handleSolve = (e) => {
+        const token = e.detail.token;
+        setCapToken(token);
+      };
+      capWidget.addEventListener('solve', handleSolve);
+      
+      return () => {
+        capWidget.removeEventListener('solve', handleSolve);
+      };
+    }
   }, []);
 
   const onFinish = async (values) => {
+    if (!capToken) {
+      setError('请完成验证码验证');
+      return;
+    }
+    
     setLoading(true);
     setError(''); // 清除之前的错误信息
     try {
-      const result = await login(values.username, values.password, values.remember);
+      const result = await login(values.username, values.password, values.remember, capToken);
       if (result.success) {
         message.success('登录成功');
         navigate('/admin');
@@ -96,6 +117,10 @@ const Login = () => {
                 <Form.Item name="remember" valuePropName="checked" noStyle>
                   <Checkbox>记住我</Checkbox>
                 </Form.Item>
+              </Form.Item>
+
+              <Form.Item>
+                <cap-widget id="cap" data-cap-api-endpoint="/api/cap/"></cap-widget>
               </Form.Item>
 
               <Form.Item>
