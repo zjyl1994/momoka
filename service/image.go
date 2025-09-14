@@ -1,10 +1,13 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/samber/lo"
 	"github.com/zjyl1994/momoka/infra/common"
+	"github.com/zjyl1994/momoka/infra/utils"
+	"github.com/zjyl1994/momoka/infra/vars"
 	"gorm.io/gorm"
 )
 
@@ -53,6 +56,7 @@ func (s *imageService) Add(db *gorm.DB, image *common.Image) error {
 		return err
 	}
 	go S3TaskService.RunTask()
+	s.FillModel(image)
 	return nil
 }
 
@@ -69,6 +73,7 @@ func (s *imageService) Get(db *gorm.DB, id int64) (*common.Image, error) {
 		return nil, err
 	}
 	image.Tags = lo.Uniq(tags)
+	s.FillModel(&image)
 	return &image, nil
 }
 
@@ -116,6 +121,8 @@ func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, k
 			return nil, 0, err
 		}
 		image.Tags = lo.Uniq(tags)
+
+		s.FillModel(image)
 	}
 
 	return images, total, nil
@@ -213,4 +220,33 @@ func (s *imageService) GetTags(db *gorm.DB) (map[string]int64, error) {
 	}
 
 	return tagsMap, nil
+}
+
+func (s *imageService) FillModel(m *common.Image) {
+	m.RemotePath = m.Hash + m.ExtName
+	m.LocalPath = utils.DataPath("cache", m.Hash[0:2], m.Hash[2:4], m.Hash+m.ExtName)
+	imageHashId, err := vars.HashID.EncodeInt64([]int64{common.ENTITY_TYPE_FILE, m.ID})
+	if err == nil {
+		m.URL = "/i/" + imageHashId + m.ExtName
+	}
+}
+
+func (s *imageService) Download(m *common.Image) error {
+	s.FillModel(m)
+	if m.RemotePath == "" || m.LocalPath == "" {
+		return errors.New("invalid image")
+	}
+	return StorageService.Download(context.Background(), m.RemotePath, m.LocalPath)
+}
+
+func (s *imageService) CountForDashboard() (int64, int64, error) {
+	var count int64
+	var size int64
+	if err := vars.Database.Model(&common.Image{}).Count(&count).Error; err != nil {
+		return 0, 0, err
+	}
+	if err := vars.Database.Model(&common.Image{}).Select("sum(file_size)").Scan(&size).Error; err != nil {
+		return 0, 0, err
+	}
+	return count, size, nil
 }

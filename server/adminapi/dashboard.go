@@ -17,7 +17,7 @@ func DashboardDataHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	stats, err := service.VirtualFATService.Statistics()
+	imageCount, imageSize, err := service.ImageService.CountForDashboard()
 	if err != nil {
 		return err
 	}
@@ -37,8 +37,8 @@ func DashboardDataHandler(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"count": fiber.Map{
-			"image_count": stats.FileCount,
-			"image_size":  stats.FileSize,
+			"image_count": imageCount,
+			"image_size":  imageSize,
 			"cache_count": fileCount,
 			"cache_size":  totalSize,
 		},

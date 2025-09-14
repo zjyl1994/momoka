@@ -72,12 +72,13 @@ func Run(listenAddr string) error {
 	adminAPI.Post("/backup/restore", adminapi.RestoreBackupHandler)
 	adminAPI.Get("/backup", adminapi.ListBackupHandler)
 	adminAPI.Delete("/backup", adminapi.DeleteBackupHandler)
-	// 文件管理
-	adminAPI.Post("/file/upload", adminapi.VFATUploadHandler)
-	adminAPI.Post("/file/action", adminapi.VFATActionHandler)
-	adminAPI.Get("/file/list", adminapi.VFATListHandler)
-	adminAPI.Get("/file/tree", adminapi.VFATGetTreeHandler)
-	adminAPI.Get("/file/all", adminapi.VFATGetAllHandler)
+	// 图片管理
+	adminAPI.Post("/image", adminapi.ImageUploadHandler)
+	adminAPI.Delete("/image", adminapi.ImageDeleteHandler)
+	adminAPI.Get("/image", adminapi.ImageListHandler)
+	adminAPI.Get("/image/:id", adminapi.ImageDetailHandler)
+	adminAPI.Put("/image/:id", adminapi.ImageUpdateHandler)
+	adminAPI.Get("/image/tags", adminapi.ImageTagListHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,
