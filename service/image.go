@@ -21,7 +21,7 @@ func (s *imageService) Add(db *gorm.DB, image *common.Image) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// If hash doesn't exist, add S3 upload task
 		if hashCount == 0 {
 			err = S3TaskService.Add(tx, []*common.S3Task{
@@ -35,7 +35,7 @@ func (s *imageService) Add(db *gorm.DB, image *common.Image) error {
 				return err
 			}
 		}
-		
+
 		if err := tx.Create(image).Error; err != nil {
 			return err
 		}
@@ -72,22 +72,30 @@ func (s *imageService) Get(db *gorm.DB, id int64) (*common.Image, error) {
 	return &image, nil
 }
 
-func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int) ([]*common.Image, int64, error) {
+func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, keywordIsTag bool) ([]*common.Image, int64, error) {
 	var images []*common.Image
 	var total int64
 
 	// Build base query
 	query := db.Model(&common.Image{})
 
-	// If keyword is provided, search in name, remark, and tags
+	// If keyword is provided, search based on keywordIsTag flag
 	if keyword != "" {
-		// Search in image name, remark, or tags
-		query = query.Where(
-			"name LIKE ? OR remark LIKE ? OR id IN (?)",
-			"%"+keyword+"%",
-			"%"+keyword+"%",
-			db.Model(&common.ImageTags{}).Select("image_id").Where("tag_name LIKE ?", "%"+keyword+"%"),
-		)
+		if keywordIsTag {
+			// Search only in tags with exact match
+			query = query.Where(
+				"id IN (?)",
+				db.Model(&common.ImageTags{}).Select("image_id").Where("tag_name = ?", keyword),
+			)
+		} else {
+			// Search in image name, remark, or tags
+			query = query.Where(
+				"name LIKE ? OR remark LIKE ? OR id IN (?)",
+				"%"+keyword+"%",
+				"%"+keyword+"%",
+				db.Model(&common.ImageTags{}).Select("image_id").Where("tag_name LIKE ?", "%"+keyword+"%"),
+			)
+		}
 	}
 
 	// Get total count
@@ -120,17 +128,17 @@ func (s *imageService) Delete(db *gorm.DB, id []int64) error {
 		if err := tx.Where("id IN ?", id).Find(&imagesToDelete).Error; err != nil {
 			return err
 		}
-		
+
 		// Delete image records
 		if err := tx.Delete(&common.Image{}, id).Error; err != nil {
 			return err
 		}
-		
+
 		// Delete image tags
 		if err := tx.Delete(&common.ImageTags{}, "image_id IN ?", id).Error; err != nil {
 			return err
 		}
-		
+
 		// Check if any other images use the same hash and add S3 delete tasks if needed
 		for _, image := range imagesToDelete {
 			var hashCount int64
@@ -138,7 +146,7 @@ func (s *imageService) Delete(db *gorm.DB, id []int64) error {
 			if err != nil {
 				return err
 			}
-			
+
 			// If no other images use this hash, add S3 delete task
 			if hashCount == 0 {
 				err = S3TaskService.Add(tx, []*common.S3Task{
@@ -152,7 +160,7 @@ func (s *imageService) Delete(db *gorm.DB, id []int64) error {
 				}
 			}
 		}
-		
+
 		return nil
 	})
 	if err != nil {
@@ -181,4 +189,28 @@ func (s *imageService) Update(db *gorm.DB, image *common.Image) error {
 		}
 		return nil
 	})
+}
+
+func (s *imageService) GetTags(db *gorm.DB) (map[string]int64, error) {
+	var results []struct {
+		TagName string `json:"tag_name"`
+		Count   int64  `json:"count"`
+	}
+
+	// Group by tag_name and count occurrences
+	err := db.Model(&common.ImageTags{}).
+		Select("tag_name, COUNT(*) as count").
+		Group("tag_name").
+		Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to map
+	tagsMap := make(map[string]int64)
+	for _, result := range results {
+		tagsMap[result.TagName] = result.Count
+	}
+
+	return tagsMap, nil
 }
