@@ -8,7 +8,7 @@ import AdminLayout from './components/AdminLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ImageUpload from './pages/ImageUpload';
-import FileManager from './pages/FileManager';
+import ImageManager from './pages/ImageManager';
 import Settings from './pages/Settings';
 import './App.css';
 
@@ -33,8 +33,8 @@ function App() {
               {/* 图片管理 */}
               <Route path="images-upload" element={<ImageUpload />} />
 
-              {/* 文件管理 */}
-              <Route path="files" element={<FileManager />} />
+              {/* 图片管理 */}
+              <Route path="images" element={<ImageManager />} />
 
               <Route path="analytics" element={
                 <div style={{ padding: '24px', textAlign: 'center' }}>

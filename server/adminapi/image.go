@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
@@ -37,46 +38,91 @@ func ImageUploadHandler(c *fiber.Ctx) error {
 	// Calculate file hash
 	hash, err := utils.MultipartFileHeaderHash(file)
 	if err != nil {
+		logrus.Errorln("Failed to calculate file hash:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to calculate file hash",
 		})
 	}
 
-	// Get file extension
-	filename := file.Filename
-	extName := filepath.Ext(filename)
-
-	// Create image model
-	image := &common.Image{
-		Name:        strings.TrimSuffix(filename, extName),
-		ExtName:     extName,
-		ContentType: file.Header.Get("Content-Type"),
-		Hash:        hash,
-		FileSize:    file.Size,
-		Remark:      c.FormValue("remark"),
+	// Check if image with same hash already exists
+	existingImage, err := service.ImageService.GetByHash(vars.Database, hash)
+	if err != nil {
+		logrus.Errorln("Failed to check existing image by hash:", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "failed to check existing image",
+		})
 	}
 
+	// Get file extension and filename
+	filename := file.Filename
+	extName := filepath.Ext(filename)
+	name := strings.TrimSuffix(filename, extName)
+	remark := c.FormValue("remark")
+
 	// Parse tags
+	var tags []string
 	tagsStr := c.FormValue("tags")
 	if tagsStr != "" {
-		image.Tags = strings.Split(tagsStr, ",")
-		for i, tag := range image.Tags {
-			image.Tags[i] = strings.TrimSpace(tag)
+		tags = strings.Split(tagsStr, ",")
+		for i, tag := range tags {
+			tags[i] = strings.TrimSpace(tag)
 		}
 	}
 
-	// Save file to local path
-	if err := utils.SaveMultipartFile(file, image.LocalPath); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to save file",
-		})
-	}
+	var image *common.Image
 
-	// Add to database
-	if err := service.ImageService.Add(vars.Database, image); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to save image record",
-		})
+	if existingImage != nil {
+		// Hash already exists, update existing record like ImageUpdateHandler
+		image = existingImage
+
+		// Update fields if provided
+		if name != "" {
+			image.Name = name
+		}
+		if remark != "" {
+			image.Remark = remark
+		}
+		if len(tags) > 0 {
+			image.Tags = tags
+		}
+
+		// Update image record
+		if err := service.ImageService.Update(vars.Database, image); err != nil {
+			logrus.Errorln("Failed to update existing image:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to update existing image",
+			})
+		}
+	} else {
+		// Hash doesn't exist, create new record
+		image = &common.Image{
+			Name:        name,
+			ExtName:     extName,
+			ContentType: file.Header.Get("Content-Type"),
+			Hash:        hash,
+			FileSize:    file.Size,
+			Remark:      remark,
+			Tags:        tags,
+		}
+
+		// FillModel to set paths
+		service.ImageService.FillModel(image)
+
+		// Save file to local path
+		if err := utils.SaveMultipartFile(file, image.LocalPath); err != nil {
+			logrus.Errorln("Failed to save file:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to save file",
+			})
+		}
+
+		// Add to database
+		if err := service.ImageService.Add(vars.Database, image); err != nil {
+			logrus.Errorln("Failed to save image record:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to save image record",
+			})
+		}
 	}
 
 	// Build response URL
@@ -86,7 +132,9 @@ func ImageUploadHandler(c *fiber.Ctx) error {
 	} else {
 		baseUrl = c.BaseURL()
 	}
-	image.URL = baseUrl + image.URL
+	if image.URL != "" {
+		image.URL = baseUrl + image.URL
+	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"image": image,
@@ -126,6 +174,7 @@ func ImageDeleteHandler(c *fiber.Ctx) error {
 
 	// Delete images
 	if err := service.ImageService.Delete(vars.Database, ids); err != nil {
+		logrus.Errorln("Failed to delete images:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to delete images",
 		})
@@ -162,6 +211,7 @@ func ImageListHandler(c *fiber.Ctx) error {
 	// Search images
 	images, total, err := service.ImageService.Search(vars.Database, keyword, page, pageSize, keywordIsTag)
 	if err != nil {
+		logrus.Errorln("Failed to search images:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to search images",
 		})
@@ -208,6 +258,7 @@ func ImageDetailHandler(c *fiber.Ctx) error {
 	// Get image
 	image, err := service.ImageService.Get(vars.Database, id)
 	if err != nil {
+		logrus.Errorln("Failed to get image:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to get image",
 		})
@@ -255,6 +306,7 @@ func ImageUpdateHandler(c *fiber.Ctx) error {
 	// Get existing image
 	image, err := service.ImageService.Get(vars.Database, id)
 	if err != nil {
+		logrus.Errorln("Failed to get image for update:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to get image",
 		})
@@ -274,6 +326,7 @@ func ImageUpdateHandler(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&updateData); err != nil {
+		logrus.Errorln("Failed to parse request body:", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 		})
@@ -296,6 +349,7 @@ func ImageUpdateHandler(c *fiber.Ctx) error {
 
 	// Update image
 	if err := service.ImageService.Update(vars.Database, image); err != nil {
+		logrus.Errorln("Failed to update image:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to update image",
 		})
@@ -322,6 +376,7 @@ func ImageTagListHandler(c *fiber.Ctx) error {
 	// Get all tags with counts
 	tags, err := service.ImageService.GetTags(vars.Database)
 	if err != nil {
+		logrus.Errorln("Failed to get tags:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to get tags",
 		})

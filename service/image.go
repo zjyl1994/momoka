@@ -77,6 +77,23 @@ func (s *imageService) Get(db *gorm.DB, id int64) (*common.Image, error) {
 	return &image, nil
 }
 
+func (s *imageService) GetByHash(db *gorm.DB, hash string) (*common.Image, error) {
+	var image common.Image
+	if err := db.Where("hash = ?", hash).First(&image).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var tags []string
+	if err := db.Model(&common.ImageTags{}).Where("image_id = ?", image.ID).Pluck("tag_name", &tags).Error; err != nil {
+		return nil, err
+	}
+	image.Tags = lo.Uniq(tags)
+	s.FillModel(&image)
+	return &image, nil
+}
+
 func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, keywordIsTag bool) ([]*common.Image, int64, error) {
 	var images []*common.Image
 	var total int64

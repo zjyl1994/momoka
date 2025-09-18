@@ -289,6 +289,8 @@ const ImageUpload = () => {
                 setFileList([]);
                 form.resetFields();
                 setTags([]);
+                setUploadResults([]);
+                setUploadProgress(0);
               }}
               disabled={uploading}
             >
