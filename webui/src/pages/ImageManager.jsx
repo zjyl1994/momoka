@@ -41,7 +41,7 @@ const ImageManager = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [keyword, setKeyword] = useState('');
-  const [keywordIsTag, setKeywordIsTag] = useState(false);
+  const [selectedTag, setSelectedTag] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
   const [tags, setTags] = useState([]);
   
@@ -61,11 +61,14 @@ const ImageManager = () => {
   const fetchImages = async () => {
     setLoading(true);
     try {
+      const searchKeyword = selectedTag || keyword;
+      const isTagSearch = !!selectedTag;
+      
       const params = new URLSearchParams({
         page: currentPage.toString(),
         pageSize: pageSize.toString(),
-        keyword: keyword,
-        keywordIsTag: keywordIsTag.toString()
+        keyword: searchKeyword,
+        keywordIsTag: isTagSearch.toString()
       });
 
       const response = await authFetch(`/admin-api/image?${params}`);
@@ -100,11 +103,19 @@ const ImageManager = () => {
   useEffect(() => {
     fetchImages();
     fetchTags();
-  }, [currentPage, pageSize, keyword, keywordIsTag]);
+  }, [currentPage, pageSize, keyword, selectedTag]);
 
   // Handle search
   const handleSearch = (value) => {
     setKeyword(value);
+    setSelectedTag(''); // Clear tag selection when searching by keyword
+    setCurrentPage(1);
+  };
+
+  // Handle tag selection
+  const handleTagSelect = (value) => {
+    setSelectedTag(value);
+    setKeyword(''); // Clear keyword when selecting tag
     setCurrentPage(1);
   };
 
@@ -280,36 +291,33 @@ const ImageManager = () => {
             <Row gutter={16} style={{ marginBottom: '16px' }}>
               <Col span={12}>
                 <Search
-                  placeholder="搜索图片名称或标签"
+                  placeholder="搜索图片名称"
                   allowClear
                   enterButton={<SearchOutlined />}
                   onSearch={handleSearch}
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
                   style={{ width: '100%' }}
                 />
               </Col>
-              <Col span={6}>
-                <Checkbox
-                  checked={keywordIsTag}
-                  onChange={(e) => {
-                    setKeywordIsTag(e.target.checked);
-                    setCurrentPage(1);
-                  }}
-                >
-                  按标签搜索
-                </Checkbox>
-              </Col>
-              <Col span={6}>
+              <Col span={12}>
                 <Select
-                  value={pageSize}
-                  onChange={(value) => {
-                    setPageSize(value);
-                    setCurrentPage(1);
-                  }}
+                  placeholder="选择标签筛选"
+                  allowClear
+                  value={selectedTag || undefined}
+                  onChange={handleTagSelect}
                   style={{ width: '100%' }}
+                  showSearch
+                  filterOption={(input, option) =>
+                    option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
                 >
-                  <Select.Option value={20}>20 / 页</Select.Option>
-                  <Select.Option value={50}>50 / 页</Select.Option>
-                  <Select.Option value={100}>100 / 页</Select.Option>
+                  {tags.map((tag) => (
+                    <Select.Option key={tag} value={tag}>
+                      <TagsOutlined style={{ marginRight: '4px' }} />
+                      {tag}
+                    </Select.Option>
+                  ))}
                 </Select>
               </Col>
             </Row>
