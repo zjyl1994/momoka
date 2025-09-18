@@ -7,7 +7,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import ImageList from './pages/ImageList';
 import ImageUpload from './pages/ImageUpload';
 import FileManager from './pages/FileManager';
 import Settings from './pages/Settings';
@@ -33,7 +32,6 @@ function App() {
 
               {/* 图片管理 */}
               <Route path="images-upload" element={<ImageUpload />} />
-              <Route path="images-list" element={<ImageList />} />
 
               {/* 文件管理 */}
               <Route path="files" element={<FileManager />} />

@@ -1,75 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Upload, Button, Form, TreeSelect, message, Progress, Space, Tabs, Input } from 'antd';
-import { InboxOutlined, UploadOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
+import { Card, Upload, Button, Form, Input, message, Progress, Space, Tabs, Tag } from 'antd';
+import { InboxOutlined, UploadOutlined, DeleteOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 
 const { Dragger } = Upload;
+const { TextArea } = Input;
 
 const ImageUpload = () => {
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [folderTree, setFolderTree] = useState([]);
-  const [loadingFolders, setLoadingFolders] = useState(false);
   const [uploadResults, setUploadResults] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [inputVisible, setInputVisible] = useState(false);
+  const [inputValue, setInputValue] = useState('');
 
   // Set page title
   useEffect(() => {
     document.title = '图片上传 - Momoka 图床';
-  }, []);
-
-  // 获取文件夹树
-  const fetchFolderTree = async () => {
-    setLoadingFolders(true);
-    try {
-      const response = await authFetch('/admin-api/file/tree');
-      if (response.ok) {
-        const data = await response.json();
-        const treeData = convertToTreeSelectData(data);
-        setFolderTree(treeData);
-      } else {
-        message.error('获取文件夹列表失败');
-      }
-    } catch (error) {
-      console.error('获取文件夹树失败:', error);
-      message.error('获取文件夹列表失败');
-    } finally {
-      setLoadingFolders(false);
-    }
-  };
-
-  // 转换文件夹数据为TreeSelect格式
-  const convertToTreeSelectData = (rootFolder) => {
-    if (!rootFolder) {
-      return [{ title: '根目录', value: '/', key: '/' }];
-    }
-    
-    const convertNode = (folder) => {
-      // 构建路径：根节点为 "/"，子节点为父路径 + "/" + 名称
-      const getPath = (node, parentPath = '') => {
-        if (node.id === 0) return '/';
-        return parentPath === '/' ? `/${node.name}` : `${parentPath}/${node.name}`;
-      };
-      
-      const buildNode = (node, parentPath = '') => {
-        const currentPath = getPath(node, parentPath);
-        return {
-          title: node.name,
-          value: currentPath,
-          key: currentPath,
-          children: node.children ? node.children.map(child => buildNode(child, currentPath)) : []
-        };
-      };
-      
-      return buildNode(folder);
-    };
-    
-    return [convertNode(rootFolder)];
-  };
-
-  useEffect(() => {
-    fetchFolderTree();
   }, []);
 
   const uploadProps = {
@@ -87,7 +36,7 @@ const ImageUpload = () => {
         message.error('图片大小不能超过 10MB!');
         return false;
       }
-      return false; // 阻止自动上传
+      return false; // Prevent auto upload
     },
     onChange: (info) => {
       setFileList(info.fileList);
@@ -95,6 +44,27 @@ const ImageUpload = () => {
     onDrop(e) {
       console.log('Dropped files', e.dataTransfer.files);
     },
+  };
+
+  const handleClose = (removedTag) => {
+    const newTags = tags.filter(tag => tag !== removedTag);
+    setTags(newTags);
+  };
+
+  const showInput = () => {
+    setInputVisible(true);
+  };
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleInputConfirm = () => {
+    if (inputValue && tags.indexOf(inputValue) === -1) {
+      setTags([...tags, inputValue]);
+    }
+    setInputVisible(false);
+    setInputValue('');
   };
 
   const handleUpload = async () => {
@@ -116,10 +86,19 @@ const ImageUpload = () => {
         const file = fileList[i];
         const formData = new FormData();
         formData.append('file', file.originFileObj);
-        formData.append('path', values.folder);
+        
+        // Add remark if provided
+        if (values.remark) {
+          formData.append('remark', values.remark);
+        }
+        
+        // Add tags if any
+        if (tags.length > 0) {
+          formData.append('tags', tags.join(','));
+        }
 
         try {
-          const response = await authFetch('/admin-api/file/upload', {
+          const response = await authFetch('/admin-api/image', {
             method: 'POST',
             body: formData,
           });
@@ -128,13 +107,15 @@ const ImageUpload = () => {
             const result = await response.json();
             results.push({
               filename: file.name,
-              url: result.file.url,
-              success: true
+              url: result.image.url,
+              success: true,
+              image: result.image
             });
           } else {
+            const errorData = await response.json();
             results.push({
               filename: file.name,
-              error: '上传失败',
+              error: errorData.error || '上传失败',
               success: false
             });
           }
@@ -146,7 +127,7 @@ const ImageUpload = () => {
           });
         }
 
-        // 更新进度
+        // Update progress
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
 
@@ -166,6 +147,7 @@ const ImageUpload = () => {
       
       setFileList([]);
       form.resetFields();
+      setTags([]);
 
     } catch (error) {
       console.error('表单验证失败:', error);
@@ -179,276 +161,305 @@ const ImageUpload = () => {
   };
 
   return (
-    <div  style={{ padding: '24px' }}>
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            folder: '/'
-          }}
+    <div style={{ padding: '24px' }}>
+      <Form
+        form={form}
+        layout="vertical"
+      >
+        <Form.Item label="选择图片">
+          <Dragger {...uploadProps} style={{ marginBottom: '16px' }}>
+            <p className="ant-upload-drag-icon">
+              <InboxOutlined />
+            </p>
+            <p className="ant-upload-text">点击或拖拽图片到此区域上传</p>
+            <p className="ant-upload-hint">
+              支持单个或批量上传。支持 JPG、PNG、GIF 格式，单个文件不超过 10MB
+            </p>
+          </Dragger>
+
+          {fileList.length > 0 && (
+            <div style={{ marginTop: '16px' }}>
+              <h4>待上传文件 ({fileList.length}):</h4>
+              {fileList.map(file => (
+                <div key={file.uid} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  marginBottom: '8px'
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 500 }}>{file.name}</span>
+                    <span style={{ color: '#666', marginLeft: '8px' }}>
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleRemoveFile(file)}
+                    size="small"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </Form.Item>
+
+        <Form.Item
+          name="remark"
+          label="备注"
         >
-          <Form.Item
-            name="folder"
-            label="目标文件夹"
-            rules={[{ required: true, message: '请选择目标文件夹' }]}
-          >
-            <TreeSelect
-              style={{ width: '100%' }}
-              value={undefined}
-              dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-              treeData={folderTree}
-              placeholder="请选择文件夹"
-              treeDefaultExpandAll
-              loading={loadingFolders}
-              showSearch
-              treeNodeFilterProp="title"
+          <TextArea
+            rows={3}
+            placeholder="为这批图片添加备注信息（可选）"
+            maxLength={500}
+            showCount
+          />
+        </Form.Item>
+
+        <Form.Item label="标签">
+          <div>
+            {tags.map((tag, index) => (
+              <Tag
+                key={tag}
+                closable
+                onClose={() => handleClose(tag)}
+                style={{ marginBottom: '8px' }}
+              >
+                {tag}
+              </Tag>
+            ))}
+            {inputVisible && (
+              <Input
+                type="text"
+                size="small"
+                style={{ width: 78 }}
+                value={inputValue}
+                onChange={handleInputChange}
+                onBlur={handleInputConfirm}
+                onPressEnter={handleInputConfirm}
+                autoFocus
+              />
+            )}
+            {!inputVisible && (
+              <Tag
+                onClick={showInput}
+                style={{
+                  background: '#fff',
+                  borderStyle: 'dashed',
+                  cursor: 'pointer'
+                }}
+              >
+                <PlusOutlined /> 添加标签
+              </Tag>
+            )}
+          </div>
+        </Form.Item>
+
+        {uploading && (
+          <Form.Item>
+            <Progress 
+              percent={uploadProgress} 
+              status={uploadProgress === 100 ? 'success' : 'active'}
+              strokeColor={{
+                from: '#108ee9',
+                to: '#87d068',
+              }}
             />
           </Form.Item>
-
-          <Form.Item label="选择图片">
-            <Dragger {...uploadProps} style={{ marginBottom: '16px' }}>
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">点击或拖拽图片到此区域上传</p>
-              <p className="ant-upload-hint">
-                支持单个或批量上传。支持 JPG、PNG、GIF 格式，单个文件不超过 10MB
-              </p>
-            </Dragger>
-
-            {fileList.length > 0 && (
-              <div style={{ marginTop: '16px' }}>
-                <h4>待上传文件 ({fileList.length}):</h4>
-                {fileList.map(file => (
-                  <div key={file.uid} style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                    marginBottom: '8px'
-                  }}>
-                    <div>
-                      <span style={{ fontWeight: 500 }}>{file.name}</span>
-                      <span style={{ color: '#666', marginLeft: '8px' }}>
-                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    </div>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleRemoveFile(file)}
-                      size="small"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </Form.Item>
-
-
-
-          {uploading && (
-            <Form.Item>
-              <Progress 
-                percent={uploadProgress} 
-                status={uploadProgress === 100 ? 'success' : 'active'}
-                strokeColor={{
-                  from: '#108ee9',
-                  to: '#87d068',
-                }}
-              />
-            </Form.Item>
-          )}
-
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                icon={<UploadOutlined />}
-                onClick={handleUpload}
-                loading={uploading}
-                disabled={fileList.length === 0}
-              >
-                {uploading ? '上传中...' : '开始上传'}
-              </Button>
-              <Button
-                onClick={() => {
-                  setFileList([]);
-                  form.resetFields();
-                }}
-                disabled={uploading}
-              >
-                清空
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-        
-        {/* 上传结果展示 */}
-        {uploadResults.length > 0 && (
-          <Card 
-            title={(
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>上传结果 ({uploadResults.filter(r => r.success).length}/{uploadResults.length})</span>
-                <Space>
-                  <Button 
-                    size="small" 
-                    onClick={() => {
-                      const urls = uploadResults.filter(r => r.success).map(r => r.url).join('\n');
-                      navigator.clipboard.writeText(urls);
-                      message.success('已复制所有直链到剪贴板');
-                    }}
-                    disabled={uploadResults.filter(r => r.success).length === 0}
-                  >
-                    批量复制直链
-                  </Button>
-                  <Button 
-                    size="small" 
-                    onClick={() => {
-                      const markdowns = uploadResults.filter(r => r.success).map(r => `![${r.filename}](${r.url})`).join('\n');
-                      navigator.clipboard.writeText(markdowns);
-                      message.success('已复制所有Markdown到剪贴板');
-                    }}
-                    disabled={uploadResults.filter(r => r.success).length === 0}
-                  >
-                    批量复制Markdown
-                  </Button>
-                </Space>
-              </div>
-            )} 
-            style={{ marginTop: '24px' }}
-          >
-            {uploadResults.map((result, index) => (
-              <div key={index} style={{
-                padding: '16px',
-                border: `1px solid ${result.success ? '#b7eb8f' : '#ffccc7'}`,
-                borderRadius: '8px',
-                marginBottom: '16px',
-                backgroundColor: result.success ? '#f6ffed' : '#fff2f0',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-              }}>
-                <div style={{ 
-                   display: 'flex', 
-                   justifyContent: 'space-between', 
-                   alignItems: 'center',
-                   marginBottom: '12px',
-                   paddingBottom: '8px',
-                   borderBottom: `1px solid ${result.success ? '#d9f7be' : '#ffd8d8'}`
-                 }}>
-                   <span style={{ 
-                     fontWeight: 600, 
-                     color: result.success ? '#52c41a' : '#ff4d4f',
-                     fontSize: '14px'
-                   }}>
-                     {result.success ? '✓' : '✗'} {result.filename}
-                   </span>
-                   {result.success && (
-                     <span style={{ 
-                       fontSize: '12px', 
-                       color: '#52c41a',
-                       backgroundColor: '#f6ffed',
-                       padding: '2px 8px',
-                       borderRadius: '12px',
-                       border: '1px solid #b7eb8f'
-                     }}>
-                       上传成功
-                     </span>
-                   )}
-                 </div>
-                
-                {result.success && result.url && (
-                    <div>
-                      <Tabs
-                        size="small"
-                        tabBarStyle={{ marginBottom: '12px' }}
-                        items={[
-                         {
-                           key: 'url',
-                           label: '直链',
-                           children: (
-                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <Input 
-                                  value={result.url} 
-                                  readOnly 
-                                  size="small"
-                                  style={{ fontSize: '12px', fontFamily: 'monospace' }}
-                                />
-                                <Button 
-                                  size="small" 
-                                  icon={<CopyOutlined />}
-                                  type="primary"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(result.url);
-                                    message.success('已复制到剪贴板');
-                                  }}
-                                />
-                              </div>
-                           )
-                         },
-                         {
-                           key: 'markdown',
-                           label: 'Markdown',
-                           children: (
-                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <Input 
-                                  value={`![${result.filename}](${result.url})`} 
-                                  readOnly 
-                                  size="small"
-                                  style={{ fontSize: '12px', fontFamily: 'monospace' }}
-                                />
-                                <Button 
-                                  size="small" 
-                                  icon={<CopyOutlined />}
-                                  type="primary"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(`![${result.filename}](${result.url})`);
-                                    message.success('已复制到剪贴板');
-                                  }}
-                                />
-                              </div>
-                           )
-                         },
-                         {
-                           key: 'bbcode',
-                           label: 'BBCode',
-                           children: (
-                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <Input 
-                                  value={`[img]${result.url}[/img]`} 
-                                  readOnly 
-                                  size="small"
-                                  style={{ fontSize: '12px', fontFamily: 'monospace' }}
-                                />
-                                <Button 
-                                  size="small" 
-                                  icon={<CopyOutlined />}
-                                  type="primary"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(`[img]${result.url}[/img]`);
-                                    message.success('已复制到剪贴板');
-                                  }}
-                                />
-                              </div>
-                           )
-                         }
-                       ]}
-                     />
-                   </div>
-                 )}
-                
-                {!result.success && result.error && (
-                  <div style={{ color: '#ff4d4f', fontSize: '12px' }}>
-                    错误：{result.error}
-                  </div>
-                )}
-              </div>
-            ))}
-          </Card>
         )}
-      </div>
+
+        <Form.Item>
+          <Space>
+            <Button
+              type="primary"
+              icon={<UploadOutlined />}
+              onClick={handleUpload}
+              loading={uploading}
+              disabled={fileList.length === 0}
+            >
+              {uploading ? '上传中...' : '开始上传'}
+            </Button>
+            <Button
+              onClick={() => {
+                setFileList([]);
+                form.resetFields();
+                setTags([]);
+              }}
+              disabled={uploading}
+            >
+              清空
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+      
+      {/* Upload results display */}
+      {uploadResults.length > 0 && (
+        <Card 
+          title={(
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>上传结果 ({uploadResults.filter(r => r.success).length}/{uploadResults.length})</span>
+              <Space>
+                <Button 
+                  size="small" 
+                  onClick={() => {
+                    const urls = uploadResults.filter(r => r.success).map(r => r.url).join('\n');
+                    navigator.clipboard.writeText(urls);
+                    message.success('已复制所有直链到剪贴板');
+                  }}
+                  disabled={uploadResults.filter(r => r.success).length === 0}
+                >
+                  批量复制直链
+                </Button>
+                <Button 
+                  size="small" 
+                  onClick={() => {
+                    const markdowns = uploadResults.filter(r => r.success).map(r => `![${r.filename}](${r.url})`).join('\n');
+                    navigator.clipboard.writeText(markdowns);
+                    message.success('已复制所有Markdown到剪贴板');
+                  }}
+                  disabled={uploadResults.filter(r => r.success).length === 0}
+                >
+                  批量复制Markdown
+                </Button>
+              </Space>
+            </div>
+          )} 
+          style={{ marginTop: '24px' }}
+        >
+          {uploadResults.map((result, index) => (
+            <div key={index} style={{
+              padding: '16px',
+              border: `1px solid ${result.success ? '#b7eb8f' : '#ffccc7'}`,
+              borderRadius: '8px',
+              marginBottom: '16px',
+              backgroundColor: result.success ? '#f6ffed' : '#fff2f0',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+            }}>
+              <div style={{ 
+                 display: 'flex', 
+                 justifyContent: 'space-between', 
+                 alignItems: 'center',
+                 marginBottom: '12px',
+                 paddingBottom: '8px',
+                 borderBottom: `1px solid ${result.success ? '#d9f7be' : '#ffd8d8'}`
+               }}>
+                 <span style={{ 
+                   fontWeight: 600, 
+                   color: result.success ? '#52c41a' : '#ff4d4f',
+                   fontSize: '14px'
+                 }}>
+                   {result.success ? '✓' : '✗'} {result.filename}
+                 </span>
+                 {result.success && (
+                   <span style={{ 
+                     fontSize: '12px', 
+                     color: '#52c41a',
+                     backgroundColor: '#f6ffed',
+                     padding: '2px 8px',
+                     borderRadius: '12px',
+                     border: '1px solid #b7eb8f'
+                   }}>
+                     上传成功
+                   </span>
+                 )}
+               </div>
+              
+              {result.success && result.url && (
+                  <div>
+                    <Tabs
+                      size="small"
+                      tabBarStyle={{ marginBottom: '12px' }}
+                      items={[
+                       {
+                         key: 'url',
+                         label: '直链',
+                         children: (
+                           <div style={{ display: 'flex', gap: '8px' }}>
+                              <Input 
+                                value={result.url} 
+                                readOnly 
+                                size="small"
+                                style={{ fontSize: '12px', fontFamily: 'monospace' }}
+                              />
+                              <Button 
+                                size="small" 
+                                icon={<CopyOutlined />}
+                                type="primary"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(result.url);
+                                  message.success('已复制到剪贴板');
+                                }}
+                              />
+                            </div>
+                         )
+                       },
+                       {
+                         key: 'markdown',
+                         label: 'Markdown',
+                         children: (
+                           <div style={{ display: 'flex', gap: '8px' }}>
+                              <Input 
+                                value={`![${result.filename}](${result.url})`} 
+                                readOnly 
+                                size="small"
+                                style={{ fontSize: '12px', fontFamily: 'monospace' }}
+                              />
+                              <Button 
+                                size="small" 
+                                icon={<CopyOutlined />}
+                                type="primary"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`![${result.filename}](${result.url})`);
+                                  message.success('已复制到剪贴板');
+                                }}
+                              />
+                            </div>
+                         )
+                       },
+                       {
+                         key: 'bbcode',
+                         label: 'BBCode',
+                         children: (
+                           <div style={{ display: 'flex', gap: '8px' }}>
+                              <Input 
+                                value={`[img]${result.url}[/img]`} 
+                                readOnly 
+                                size="small"
+                                style={{ fontSize: '12px', fontFamily: 'monospace' }}
+                              />
+                              <Button 
+                                size="small" 
+                                icon={<CopyOutlined />}
+                                type="primary"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`[img]${result.url}[/img]`);
+                                  message.success('已复制到剪贴板');
+                                }}
+                              />
+                            </div>
+                         )
+                       }
+                     ]}
+                   />
+                 </div>
+               )}
+              
+              {!result.success && result.error && (
+                <div style={{ color: '#ff4d4f', fontSize: '12px' }}>
+                  错误：{result.error}
+                </div>
+              )}
+            </div>
+          ))}
+        </Card>
+      )}
+    </div>
   );
 };
 

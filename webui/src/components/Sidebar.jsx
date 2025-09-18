@@ -27,11 +27,6 @@ const Sidebar = ({ collapsed }) => {
       label: '上传图片'
     },
     {
-      key: '/admin/images-list',
-      icon:<FileImageOutlined/>,
-      label: '图片列表'
-    },
-    {
       key: '/admin/files',
       icon: <FolderOutlined />,
       label: '文件管理'

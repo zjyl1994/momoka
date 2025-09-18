@@ -245,7 +245,7 @@ func (s *imageService) CountForDashboard() (int64, int64, error) {
 	if err := vars.Database.Model(&common.Image{}).Count(&count).Error; err != nil {
 		return 0, 0, err
 	}
-	if err := vars.Database.Model(&common.Image{}).Select("sum(file_size)").Scan(&size).Error; err != nil {
+	if err := vars.Database.Model(&common.Image{}).Select("coalesce(sum(file_size), 0)").Scan(&size).Error; err != nil {
 		return 0, 0, err
 	}
 	return count, size, nil
