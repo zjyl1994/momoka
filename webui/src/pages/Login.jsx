@@ -119,9 +119,7 @@ const Login = () => {
                 </Form.Item>
               </Form.Item>
 
-              <Form.Item>
-                <cap-widget id="cap" data-cap-api-endpoint="/api/cap/" style={{ '--cap-border-radius': '6px', '--cap-widget-width': "100%",'--cap-border-color':'#d9d9d9' }}></cap-widget>
-              </Form.Item>
+
 
               <Form.Item>
                 <Button
@@ -133,6 +131,10 @@ const Login = () => {
                 >
                   {loading ? <Spin size="small" /> : '登录'}
                 </Button>
+              </Form.Item>
+
+              <Form.Item>
+                <cap-widget id="cap" data-cap-api-endpoint="/api/cap/" style={{ '--cap-widget-width': "100%", '--cap-border-color': '#d9d9d9' }}></cap-widget>
               </Form.Item>
             </Form>
 

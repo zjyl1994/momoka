@@ -518,9 +518,19 @@ const ImageManager = () => {
                           }
                           description={
                             <div>
-                              <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                                {formatFileSize(image.file_size)}
-                              </div>
+                              {image.remark && (
+                                  <div style={{ 
+                                    fontSize: '12px', 
+                                    color: '#666', 
+                                    marginBottom: '4px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                  {image.remark}
+                                  </div>
+                              )}
+                              
                               {image.tags && image.tags.length > 0 && (
                                 <div style={{ marginBottom: '4px' }}>
                                   {image.tags.slice(0, 2).map((tag, index) => (
@@ -535,19 +545,7 @@ const ImageManager = () => {
                                   )}
                                 </div>
                               )}
-                              {image.remark && (
-                                <Tooltip title={image.remark}>
-                                  <div style={{ 
-                                    fontSize: '11px', 
-                                    color: '#999',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
-                                  }}>
-                                    {image.remark}
-                                  </div>
-                                </Tooltip>
-                              )}
+                              
                             </div>
                           }
                         />
@@ -645,7 +643,7 @@ const ImageManager = () => {
 
             <div style={{ fontSize: '12px', color: '#666' }}>
               <div>文件大小: {formatFileSize(editingImage.file_size)}</div>
-              <div>上传时间: {formatDate(editingImage.created_at)}</div>
+              <div>上传时间: {formatDate(editingImage.create_time*1000)}</div>
               <div>文件类型: {editingImage.content_type}</div>
             </div>
           </div>

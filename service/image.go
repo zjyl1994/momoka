@@ -127,7 +127,7 @@ func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, k
 
 	// Apply pagination and get results
 	offset := (page - 1) * pageSize
-	if err := query.Offset(offset).Limit(pageSize).Find(&images).Error; err != nil {
+	if err := query.Order("create_time DESC").Offset(offset).Limit(pageSize).Find(&images).Error; err != nil {
 		return nil, 0, err
 	}
 
