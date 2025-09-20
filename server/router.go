@@ -76,9 +76,9 @@ func Run(listenAddr string) error {
 	adminAPI.Post("/image", adminapi.ImageUploadHandler)
 	adminAPI.Delete("/image", adminapi.ImageDeleteHandler)
 	adminAPI.Get("/image", adminapi.ImageListHandler)
+	adminAPI.Get("/image/tags", adminapi.ImageTagListHandler)
 	adminAPI.Get("/image/:id", adminapi.ImageDetailHandler)
 	adminAPI.Put("/image/:id", adminapi.ImageUpdateHandler)
-	adminAPI.Get("/image/tags", adminapi.ImageTagListHandler)
 
 	app.Use("/", compress.New(compress.Config{
 		Level: compress.LevelDefault,

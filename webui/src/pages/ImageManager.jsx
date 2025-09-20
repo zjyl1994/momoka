@@ -43,7 +43,8 @@ const ImageManager = () => {
   const [keyword, setKeyword] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
-  const [tags, setTags] = useState([]);
+  const [tags, setTags] = useState({});
+  const [showBatchOperations, setShowBatchOperations] = useState(false);
   
   // Modal states
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -93,10 +94,18 @@ const ImageManager = () => {
       const response = await authFetch('/admin-api/image/tags');
       if (response.ok) {
         const data = await response.json();
-        setTags(data.tags || []);
+        // 后端返回的是 map[string]int64 格式，直接保存标签和数量的映射
+        if (data.tags && typeof data.tags === 'object') {
+          setTags(data.tags);
+        } else {
+          setTags({});
+        }
+      } else {
+        setTags({});
       }
     } catch (error) {
       console.error('获取标签列表失败:', error);
+      setTags({}); // 确保在错误情况下 tags 仍然是对象
     }
   };
 
@@ -129,10 +138,17 @@ const ImageManager = () => {
 
   // Handle image selection
   const handleImageSelect = (imageId, checked) => {
+    let newSelectedImages;
     if (checked) {
-      setSelectedImages([...selectedImages, imageId]);
+      newSelectedImages = [...selectedImages, imageId];
     } else {
-      setSelectedImages(selectedImages.filter(id => id !== imageId));
+      newSelectedImages = selectedImages.filter(id => id !== imageId);
+    }
+    setSelectedImages(newSelectedImages);
+    
+    // 如果没有选中任何图片，隐藏批量操作区域
+    if (newSelectedImages.length === 0) {
+      setShowBatchOperations(false);
     }
   };
 
@@ -160,6 +176,7 @@ const ImageManager = () => {
       if (response.ok) {
         message.success(`成功删除 ${selectedImages.length} 张图片`);
         setSelectedImages([]);
+        setShowBatchOperations(false);
         fetchImages();
       } else {
         const errorData = await response.json();
@@ -271,35 +288,62 @@ const ImageManager = () => {
   return (
     <div style={{ height: '100%', overflow: 'hidden' }}>
       <Layout style={{ height: '100%', background: '#fff' }}>
-        <Content style={{ padding: '24px', height: '100%', overflow: 'auto' }}>
+        <Content style={{ padding: '24px', height: '100%', overflow: 'auto', paddingBottom: '80px' }}>
           {/* Header */}
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <Typography.Title level={2} style={{ margin: 0 }}>
                 图片管理
               </Typography.Title>
-              <Button 
-                icon={<ReloadOutlined />} 
-                onClick={() => fetchImages()}
-                loading={loading}
-              >
-                刷新
-              </Button>
+              <Space>
+                {!showBatchOperations ? (
+                  <Button 
+                    onClick={() => {
+                      setShowBatchOperations(true);
+                      handleSelectAll(true);
+                    }}
+                  >
+                    全选当前页
+                  </Button>
+                ) : (
+                  <div style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <Text>已选中 {selectedImages.length} 张图片</Text>
+                    <Popconfirm
+                      title="确定要删除选中的图片吗？"
+                      onConfirm={handleBatchDelete}
+                      okText="确定"
+                      cancelText="取消"
+                    >
+                      <Button danger icon={<DeleteOutlined />}>
+                        批量删除
+                      </Button>
+                    </Popconfirm>
+                    <Button 
+                      onClick={() => {
+                        setSelectedImages([]);
+                        setShowBatchOperations(false);
+                      }}
+                    >
+                      取消选择
+                    </Button>
+                  </div>
+                )}
+                <Button 
+                  icon={<ReloadOutlined />} 
+                  onClick={() => fetchImages()}
+                  loading={loading}
+                >
+                  刷新
+                </Button>
+              </Space>
             </div>
 
             {/* Search and filters */}
             <Row gutter={16} style={{ marginBottom: '16px' }}>
-              <Col span={12}>
-                <Search
-                  placeholder="搜索图片名称"
-                  allowClear
-                  enterButton={<SearchOutlined />}
-                  onSearch={handleSearch}
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  style={{ width: '100%' }}
-                />
-              </Col>
               <Col span={12}>
                 <Select
                   placeholder="选择标签筛选"
@@ -312,53 +356,30 @@ const ImageManager = () => {
                     option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  {tags.map((tag) => (
+                  {Object.keys(tags).map((tag) => (
                     <Select.Option key={tag} value={tag}>
                       <TagsOutlined style={{ marginRight: '4px' }} />
-                      {tag}
+                      {tag} <span style={{ color: '#999', fontSize: '12px' }}>({tags[tag]})</span>
                     </Select.Option>
                   ))}
                 </Select>
               </Col>
+              <Col span={12}>
+                <Search
+                  placeholder="搜索图片名称"
+                  allowClear
+                  enterButton={<SearchOutlined />}
+                  onSearch={handleSearch}
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </Col>
             </Row>
 
-            {/* Batch operations */}
-            {selectedImages.length > 0 && (
-              <div style={{ 
-                padding: '12px 16px', 
-                background: '#f0f2f5', 
-                borderRadius: '6px',
-                marginBottom: '16px'
-              }}>
-                <Space>
-                  <Text>已选中 {selectedImages.length} 张图片</Text>
-                  <Popconfirm
-                    title="确定要删除选中的图片吗？"
-                    onConfirm={handleBatchDelete}
-                    okText="确定"
-                    cancelText="取消"
-                  >
-                    <Button danger icon={<DeleteOutlined />}>
-                      批量删除
-                    </Button>
-                  </Popconfirm>
-                  <Button onClick={() => setSelectedImages([])}>
-                    取消选择
-                  </Button>
-                </Space>
-              </div>
-            )}
 
-            {/* Select all */}
-            <div style={{ marginBottom: '16px' }}>
-              <Checkbox
-                indeterminate={selectedImages.length > 0 && selectedImages.length < images.length}
-                checked={images.length > 0 && selectedImages.length === images.length}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-              >
-                全选当前页
-              </Checkbox>
-            </div>
+
+
           </div>
 
           {/* Image grid */}
@@ -378,8 +399,17 @@ const ImageManager = () => {
                     <Card
                       hoverable
                       style={{ 
-                        height: '320px',
-                        border: selectedImages.includes(image.id) ? '2px solid #1890ff' : '1px solid #d9d9d9'
+                        height: '380px',
+                        border: selectedImages.includes(image.id) ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        body: {
+                          padding: '16px',
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between'
+                        }
                       }}
                       cover={
                         <div style={{ 
@@ -429,80 +459,99 @@ const ImageManager = () => {
                         </div>
                       }
                       actions={[
-                        <Tooltip title={image.url ? "预览" : "图片链接无效"}>
+                        <Tooltip key="preview" title={image.url ? "预览" : "图片链接无效"}>
                           <EyeOutlined 
-                            onClick={() => handlePreview(image.url)}
-                            style={{ color: image.url ? undefined : '#ccc', cursor: image.url ? 'pointer' : 'not-allowed' }}
+                            onClick={() => image.url && handlePreview(image.url)}
+                            style={{ 
+                              cursor: image.url ? 'pointer' : 'not-allowed',
+                              opacity: image.url ? 1 : 0.5
+                            }}
                           />
                         </Tooltip>,
-                        <Tooltip title="编辑">
-                          <EditOutlined onClick={() => handleEdit(image)} />
+                        <Tooltip key="edit" title="编辑">
+                          <EditOutlined 
+                            onClick={() => handleEdit(image)}
+                            style={{ 
+                              cursor: 'pointer'
+                            }}
+                          />
                         </Tooltip>,
-                        <Tooltip title={image.url ? "复制链接" : "图片链接无效"}>
+                        <Tooltip key="copy" title={image.url ? "复制链接" : "图片链接无效"}>
                           <CopyOutlined 
-                            onClick={() => handleCopyUrl(image.url)}
-                            style={{ color: image.url ? undefined : '#ccc', cursor: image.url ? 'pointer' : 'not-allowed' }}
+                            onClick={() => image.url && handleCopyUrl(image.url)}
+                            style={{ 
+                              cursor: image.url ? 'pointer' : 'not-allowed',
+                              opacity: image.url ? 1 : 0.5
+                            }}
                           />
                         </Tooltip>,
                         <Popconfirm
+                          key="delete"
                           title="确定要删除这张图片吗？"
                           onConfirm={() => handleSingleDelete(image.id)}
                           okText="确定"
                           cancelText="取消"
                         >
                           <Tooltip title="删除">
-                            <DeleteOutlined style={{ color: '#ff4d4f' }} />
+                            <DeleteOutlined 
+                              style={{ 
+                                cursor: 'pointer'
+                              }}
+                            />
                           </Tooltip>
                         </Popconfirm>
                       ]}
                     >
-                      <Card.Meta
-                        title={
-                          <Tooltip title={image.name}>
-                            <div style={{ 
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              {image.name}
-                            </div>
-                          </Tooltip>
-                        }
-                        description={
-                          <div>
-                            <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                              {formatFileSize(image.file_size)}
-                            </div>
-                            {image.tags && image.tags.length > 0 && (
-                              <div style={{ marginBottom: '4px' }}>
-                                {image.tags.slice(0, 2).map((tag, index) => (
-                                  <Tag key={index} size="small" style={{ fontSize: '10px' }}>
-                                    {tag}
-                                  </Tag>
-                                ))}
-                                {image.tags.length > 2 && (
-                                  <Tag size="small" style={{ fontSize: '10px' }}>
-                                    +{image.tags.length - 2}
-                                  </Tag>
-                                )}
+                      {/* 内容区域 */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <Card.Meta
+                          title={
+                            <Tooltip title={image.name}>
+                              <div style={{ 
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {image.name}
                               </div>
-                            )}
-                            {image.remark && (
-                              <Tooltip title={image.remark}>
-                                <div style={{ 
-                                  fontSize: '11px', 
-                                  color: '#999',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {image.remark}
+                            </Tooltip>
+                          }
+                          description={
+                            <div>
+                              <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                                {formatFileSize(image.file_size)}
+                              </div>
+                              {image.tags && image.tags.length > 0 && (
+                                <div style={{ marginBottom: '4px' }}>
+                                  {image.tags.slice(0, 2).map((tag, index) => (
+                                    <Tag key={index} size="small" style={{ fontSize: '10px' }}>
+                                      {tag}
+                                    </Tag>
+                                  ))}
+                                  {image.tags.length > 2 && (
+                                    <Tag size="small" style={{ fontSize: '10px' }}>
+                                      +{image.tags.length - 2}
+                                    </Tag>
+                                  )}
                                 </div>
-                              </Tooltip>
-                            )}
-                          </div>
-                        }
-                      />
+                              )}
+                              {image.remark && (
+                                <Tooltip title={image.remark}>
+                                  <div style={{ 
+                                    fontSize: '11px', 
+                                    color: '#999',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {image.remark}
+                                  </div>
+                                </Tooltip>
+                              )}
+                            </div>
+                          }
+                        />
+                      </div>
                     </Card>
                   </Col>
                 ))}
@@ -512,7 +561,15 @@ const ImageManager = () => {
 
           {/* Pagination */}
           {total > 0 && (
-            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              alignItems: 'center',
+              marginTop: '24px',
+              paddingBottom: '24px',
+              borderTop: '1px solid #f0f0f0',
+              paddingTop: '16px'
+            }}>
               <Pagination
                 current={currentPage}
                 total={total}
