@@ -129,16 +129,18 @@ func BackgroundBackupTask(ctx context.Context) {
 		return
 	}
 
-	if backupDay == today { // 今天已备份，跳过
+	if backupDay != today { // 今天未备份
+		// 生成新的自动备份
+		if err = BackupService.MakeBackup(today + ".auto"); err != nil {
+			logrus.Errorf("MakeBackup failed: %v", err)
+			return
+		}
+		// 更新备份信息
+		if err = SettingService.Set(common.SETTING_KEY_AUTO_BACKUP_DAY, today); err != nil {
+			logrus.Errorf("SetSetting failed: %v", err)
+			return
+		}
 		return
-	}
-	// 生成新的自动备份
-	if err := BackupService.MakeBackup(today + ".auto"); err != nil {
-		logrus.Errorf("MakeBackup failed: %v", err)
-	}
-	// 更新备份信息
-	if err := SettingService.Set(common.SETTING_KEY_AUTO_BACKUP_DAY, today); err != nil {
-		logrus.Errorf("SetSetting failed: %v", err)
 	}
 	// 列出已有备份，只保留5个自动备份
 	backups, err := BackupService.ListBackups()
@@ -149,6 +151,9 @@ func BackgroundBackupTask(ctx context.Context) {
 	autoBackups := lo.Filter(backups, func(item common.FileInfo, index int) bool {
 		return strings.HasSuffix(item.Name, ".auto")
 	})
+	logrus.Debugln("Auto backups", lo.Map(autoBackups, func(item common.FileInfo, index int) string {
+		return item.Name
+	}))
 	if len(autoBackups) > 5 {
 		// 排序，保留最新的5个
 		sort.Slice(autoBackups, func(i, j int) bool {
