@@ -50,6 +50,7 @@ const ImageManager = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingImage, setEditingImage] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', remark: '', tags: [] });
+  const [tagInputValue, setTagInputValue] = useState(''); // Temporary string for tag input
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
 
@@ -216,6 +217,7 @@ const ImageManager = () => {
       remark: image.remark || '',
       tags: image.tags || []
     });
+    setTagInputValue((image.tags || []).join(', ')); // Initialize tag input value
     setEditModalVisible(true);
   };
 
@@ -223,13 +225,17 @@ const ImageManager = () => {
   const handleEditSave = async () => {
     if (!editingImage) return;
 
+    // Convert tag input value to tags array before saving
+    const tags = tagInputValue.split(',').map(tag => tag.trim()).filter(tag => tag);
+    const formData = { ...editForm, tags };
+
     try {
       const response = await authFetch(`/admin-api/image/${editingImage.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(formData)
       });
 
       if (response.ok) {
@@ -402,14 +408,14 @@ const ImageManager = () => {
                         height: '380px',
                         border: selectedImages.includes(image.id) ? '2px solid #1890ff' : '1px solid #d9d9d9',
                         display: 'flex',
+                        flexDirection: 'column'
+                      }}
+                      bodyStyle={{
+                        padding: '16px',
+                        flex: 1,
+                        display: 'flex',
                         flexDirection: 'column',
-                        body: {
-                          padding: '16px',
-                          flex: 1,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between'
-                        }
+                        justifyContent: 'space-between'
                       }}
                       cover={
                         <div style={{ 
@@ -503,7 +509,13 @@ const ImageManager = () => {
                       ]}
                     >
                       {/* 内容区域 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ 
+                        flex: 1, 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: 0
+                      }}>
                         <Card.Meta
                           title={
                             <Tooltip title={image.name}>
@@ -632,11 +644,8 @@ const ImageManager = () => {
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', marginBottom: '4px' }}>标签 (用逗号分隔):</label>
               <Input
-                value={editForm.tags.join(', ')}
-                onChange={(e) => {
-                  const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-                  setEditForm({ ...editForm, tags });
-                }}
+                value={tagInputValue}
+                onChange={(e) => setTagInputValue(e.target.value)}
                 placeholder="请输入标签，用逗号分隔"
               />
             </div>
