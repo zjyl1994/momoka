@@ -132,6 +132,14 @@ func BackgroundBackupTask(ctx context.Context) {
 	if backupDay == today { // 今天已备份，跳过
 		return
 	}
+	// 生成新的自动备份
+	if err := BackupService.MakeBackup(today + ".auto"); err != nil {
+		logrus.Errorf("MakeBackup failed: %v", err)
+	}
+	// 更新备份信息
+	if err := SettingService.Set(common.SETTING_KEY_AUTO_BACKUP_DAY, today); err != nil {
+		logrus.Errorf("SetSetting failed: %v", err)
+	}
 	// 列出已有备份，只保留5个自动备份
 	backups, err := BackupService.ListBackups()
 	if err != nil {
@@ -152,13 +160,5 @@ func BackgroundBackupTask(ctx context.Context) {
 				logrus.Errorf("Delete backup %s failed: %v", autoBackups[i].Name, err)
 			}
 		}
-	}
-	// 生成新的自动备份
-	if err := BackupService.MakeBackup(today + ".auto"); err != nil {
-		logrus.Errorf("MakeBackup failed: %v", err)
-	}
-	// 更新备份信息
-	if err := SettingService.Set(common.SETTING_KEY_AUTO_BACKUP_DAY, today); err != nil {
-		logrus.Errorf("SetSetting failed: %v", err)
 	}
 }
