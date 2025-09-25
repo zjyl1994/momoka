@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { validateToken } from '../utils/api';
+import { validateToken, set401Handler } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -16,7 +16,18 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 处理401错误，清除认证状态
+  const handle401Error = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
   useEffect(() => {
+    // 设置全局401错误处理器
+    set401Handler(handle401Error);
+
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
@@ -105,7 +116,8 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
-    logout
+    logout,
+    handle401Error
   };
 
   return (

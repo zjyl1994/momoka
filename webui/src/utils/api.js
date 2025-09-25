@@ -1,5 +1,13 @@
 // API工具函数
 
+// 全局401错误处理回调
+let global401Handler = null;
+
+// 设置全局401错误处理回调
+export const set401Handler = (handler) => {
+  global401Handler = handler;
+};
+
 // 获取token
 export const getToken = () => {
   return localStorage.getItem('token');
@@ -30,12 +38,16 @@ export const authFetch = async (url, options = {}) => {
   
   const response = await fetch(url, config);
   
-  // 如果token过期或无效，清除本地存储
+  // 如果token过期或无效，触发401错误处理
   if (response.status === 401) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // 可以在这里触发重新登录
-    window.location.href = '/login';
+    if (global401Handler) {
+      global401Handler();
+    } else {
+      // 如果没有设置全局处理器，则清除本地存储并跳转
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
   }
   
   return response;
