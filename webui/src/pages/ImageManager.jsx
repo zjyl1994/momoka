@@ -63,15 +63,20 @@ const ImageManager = () => {
   const fetchImages = async () => {
     setLoading(true);
     try {
-      const searchKeyword = selectedTag || keyword;
-      const isTagSearch = !!selectedTag;
-      
       const params = new URLSearchParams({
         page: currentPage.toString(),
         pageSize: pageSize.toString(),
-        keyword: searchKeyword,
-        keywordIsTag: isTagSearch.toString()
       });
+
+      // Add keyword parameter if provided
+      if (keyword) {
+        params.append('keyword', keyword);
+      }
+
+      // Add tag parameter if provided
+      if (selectedTag) {
+        params.append('tag', selectedTag);
+      }
 
       const response = await authFetch(`/admin-api/image?${params}`);
       if (response.ok) {
@@ -118,14 +123,12 @@ const ImageManager = () => {
   // Handle search
   const handleSearch = (value) => {
     setKeyword(value);
-    setSelectedTag(''); // Clear tag selection when searching by keyword
     setCurrentPage(1);
   };
 
   // Handle tag selection
   const handleTagSelect = (value) => {
     setSelectedTag(value);
-    setKeyword(''); // Clear keyword when selecting tag
     setCurrentPage(1);
   };
 

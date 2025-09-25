@@ -94,7 +94,7 @@ func (s *imageService) GetByHash(db *gorm.DB, hash string) (*common.Image, error
 	return &image, nil
 }
 
-func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, keywordIsTag bool) ([]*common.Image, int64, error) {
+func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, imageTag string) ([]*common.Image, int64, error) {
 	var images []*common.Image
 	var total int64
 
@@ -103,21 +103,15 @@ func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, k
 
 	// If keyword is provided, search based on keywordIsTag flag
 	if keyword != "" {
-		if keywordIsTag {
-			// Search only in tags with exact match
-			query = query.Where(
-				"id IN (?)",
-				db.Model(&common.ImageTags{}).Select("image_id").Where("tag_name = ?", keyword),
-			)
-		} else {
-			// Search in image name, remark, or tags
-			query = query.Where(
-				"name LIKE ? OR remark LIKE ? OR id IN (?)",
-				"%"+keyword+"%",
-				"%"+keyword+"%",
-				db.Model(&common.ImageTags{}).Select("image_id").Where("tag_name LIKE ?", "%"+keyword+"%"),
-			)
-		}
+		// Search in image name, remark, or tags
+		keywordArg := "%" + keyword + "%"
+		query = query.Where("name LIKE ? OR remark LIKE ?", keywordArg, keywordArg)
+	}
+	// If imageTag is provided, search based on tag
+	if imageTag != "" {
+		query = query.Where("id IN (?)",
+			db.Model(&common.ImageTags{}).Select("image_id").Where("tag_name = ?", imageTag),
+		)
 	}
 
 	// Get total count

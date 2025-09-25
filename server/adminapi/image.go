@@ -188,10 +188,10 @@ func ImageDeleteHandler(c *fiber.Ctx) error {
 
 func ImageListHandler(c *fiber.Ctx) error {
 	// Get query parameters
-	keyword := c.Query("keyword", "")
+	keyword := c.Query("keyword")
+	imageTag := c.Query("tag")
 	pageStr := c.Query("page", "1")
 	pageSizeStr := c.Query("pageSize", "20")
-	keywordIsTagStr := c.Query("keywordIsTag", "false")
 
 	// Parse page
 	page, err := strconv.Atoi(pageStr)
@@ -205,11 +205,8 @@ func ImageListHandler(c *fiber.Ctx) error {
 		pageSize = 20
 	}
 
-	// Parse keywordIsTag
-	keywordIsTag := keywordIsTagStr == "true"
-
 	// Search images
-	images, total, err := service.ImageService.Search(vars.Database, keyword, page, pageSize, keywordIsTag)
+	images, total, err := service.ImageService.Search(vars.Database, keyword, page, pageSize, imageTag)
 	if err != nil {
 		logrus.Errorln("Failed to search images:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
