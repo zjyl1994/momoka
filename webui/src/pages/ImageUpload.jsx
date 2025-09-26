@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Upload, Button, Form, Input, message, Progress, Space, Tabs, Tag } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
 import { InboxOutlined, UploadOutlined, DeleteOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
@@ -50,16 +50,40 @@ const ImageUpload = () => {
   const [inputVisible, setInputVisible] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
+  // 防抖相关的ref
+  const debounceTimerRef = useRef(null);
+  const validationInProgressRef = useRef(false);
+
   // Set page title
   useEffect(() => {
     document.title = '图片上传 - Momoka 图床';
   }, []);
 
-  // 异步文件验证函数
+  // 防抖的文件列表更新函数
+  const debouncedSetFileList = useCallback((files) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setFileList(files);
+      debounceTimerRef.current = null;
+    }, 50); // 50ms 防抖延迟
+  }, []);
+
+  // 清理防抖定时器
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 真正异步的文件验证函数，使用 requestIdleCallback 优化
   const validateFile = useCallback((file) => {
     return new Promise((resolve) => {
-      // 使用 setTimeout 让验证异步执行，避免阻塞UI
-      setTimeout(() => {
+      const performValidation = () => {
         const isImage = file.type.startsWith('image/');
         if (!isImage) {
           message.error('只能上传图片文件!');
@@ -73,24 +97,78 @@ const ImageUpload = () => {
           return;
         }
         resolve(true);
-      }, 0);
+      };
+
+      // 使用 requestIdleCallback 在浏览器空闲时执行验证
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(performValidation, { timeout: 100 });
+      } else {
+        // 降级到 setTimeout
+        setTimeout(performValidation, 0);
+      }
     });
   }, []);
 
-  // 优化后的文件处理函数
-  const handleFileChange = useCallback(async (info) => {
-    const newFiles = info.fileList.filter(file => file.status !== 'error');
-    
-    // 对新添加的文件进行异步验证
+  // 批处理文件验证，避免阻塞UI
+  const batchValidateFiles = useCallback(async (files) => {
     const validatedFiles = [];
-    for (const file of newFiles) {
-      if (file.status === 'done' || await validateFile(file.originFileObj || file)) {
-        validatedFiles.push(file);
+    const batchSize = 3; // 每批处理3个文件
+    
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      
+      // 并行验证当前批次的文件
+      const batchResults = await Promise.all(
+        batch.map(async (file) => {
+          if (file.status === 'done') return file;
+          const isValid = await validateFile(file.originFileObj || file);
+          return isValid ? file : null;
+        })
+      );
+      
+      // 过滤掉无效文件
+      validatedFiles.push(...batchResults.filter(Boolean));
+      
+      // 在批次之间让出控制权，避免长时间阻塞
+      if (i + batchSize < files.length) {
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
     }
     
-    setFileList(validatedFiles);
+    return validatedFiles;
   }, [validateFile]);
+
+  // 高度优化的文件处理函数，使用防抖和智能验证
+  const handleFileChange = useCallback(async (info) => {
+    const newFiles = info.fileList.filter(file => file.status !== 'error');
+    
+    // 立即更新UI显示文件（先显示，后验证）
+    setFileList(newFiles);
+    
+    // 避免重复验证
+    if (validationInProgressRef.current) {
+      return;
+    }
+    
+    // 异步验证文件，避免阻塞UI
+    if (newFiles.length > 0) {
+      validationInProgressRef.current = true;
+      
+      try {
+        const validatedFiles = await batchValidateFiles(newFiles);
+        
+        // 使用防抖更新，避免频繁渲染
+        if (validatedFiles.length !== newFiles.length) {
+          debouncedSetFileList(validatedFiles);
+        }
+      } catch (error) {
+        console.error('文件验证失败:', error);
+        // 验证失败时保持原有文件列表
+      } finally {
+        validationInProgressRef.current = false;
+      }
+    }
+  }, [batchValidateFiles, debouncedSetFileList]);
 
   const uploadProps = {
     name: 'file',
