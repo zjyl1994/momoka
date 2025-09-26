@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, Row, Col, Statistic, Progress, Table, message, Tooltip, Image } from 'antd';
+import { Row, Col, Statistic, Progress, Table, message, Tooltip, Image } from 'antd';
+import { ProCard } from '@ant-design/pro-card';
 import {
   FileImageOutlined,
   CloudUploadOutlined,
@@ -92,30 +93,34 @@ const Dashboard = () => {
   ];
  
   return (
-    <div style={{ padding: '24px' }}>
-      <h1 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: 600 }}>仪表板</h1>
-      
-      {/* 统计卡片 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        {stats.map((stat, index) => (
-          <Col xs={24} sm={12} lg={6} key={index}>
-            <Card loading={loading}>
-              <Statistic
-                title={stat.title}
-                value={stat.value}
-                prefix={stat.icon}
-                valueStyle={{ color: stat.color }}
-              />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
+      <ProCard
+        title="仪表板"
+        headerBordered
+        style={{ marginBottom: '24px' }}
+      >
+        {/* 统计卡片 */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          {stats.map((stat, index) => (
+            <Col xs={24} sm={12} lg={6} key={index}>
+              <ProCard loading={loading} hoverable>
+                <Statistic
+                  title={stat.title}
+                  value={stat.value}
+                  prefix={stat.icon}
+                  valueStyle={{ color: stat.color }}
+                />
+              </ProCard>
+            </Col>
+          ))}
+        </Row>
+      </ProCard>
 
       {/* 系统状态 */}
       <Row gutter={[16, 16]}>
         {/* 系统负载 */}
         <Col xs={24} lg={8}>
-          <Card title="系统负载" loading={loading} style={{ height: '300px' }}>
+          <ProCard title="系统负载" loading={loading} style={{ height: '300px' }} headerBordered>
             <div style={{ padding: '16px 0' }}>
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -156,11 +161,11 @@ const Dashboard = () => {
                 />
               </div>
             </div>
-          </Card>
+          </ProCard>
         </Col>
         {/* 磁盘使用情况 */}
         <Col xs={24} lg={8}>
-          <Card title="磁盘使用情况" loading={loading} style={{ height: '300px' }}>
+          <ProCard title="磁盘使用情况" loading={loading} style={{ height: '300px' }} headerBordered>
             <div style={{ padding: '16px 0' }}>
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -190,12 +195,12 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-          </Card>
+          </ProCard>
         </Col>
 
         {/* 内存使用情况 */}
         <Col xs={24} lg={8}>
-          <Card title="内存使用情况" loading={loading} style={{ height: '300px' }}>
+          <ProCard title="内存使用情况" loading={loading} style={{ height: '300px' }} headerBordered>
             <div style={{ textAlign: 'center' }}>
               <Progress
                 type="circle"
@@ -216,7 +221,7 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-          </Card>
+          </ProCard>
         </Col>
       </Row>
     </div>

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Card, Tabs } from 'antd';
+import { Tabs } from 'antd';
+import { ProCard } from '@ant-design/pro-card';
 import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import UserManagement from './UserManagement';
@@ -66,13 +67,15 @@ const Settings = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Tabs
-        activeKey={activeTab}
-        onChange={handleTabChange}
-        items={tabItems}
-        size="large"
-        tabBarStyle={{ marginBottom: '24px' }}
-      />
+      <ProCard title="系统设置" bordered>
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={tabItems}
+          size="large"
+          tabBarStyle={{ marginBottom: '24px' }}
+        />
+      </ProCard>
     </div>
   );
 };

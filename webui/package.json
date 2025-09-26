@@ -11,6 +11,13 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
+    "@ant-design/pro-card": "^2.10.0",
+    "@ant-design/pro-components": "^2.8.10",
+    "@ant-design/pro-descriptions": "^2.6.10",
+    "@ant-design/pro-form": "^2.32.0",
+    "@ant-design/pro-layout": "^7.22.7",
+    "@ant-design/pro-list": "^2.6.9",
+    "@ant-design/pro-table": "^3.21.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@cap.js/widget": "^0.1.28",
     "antd": "^5.27.1",

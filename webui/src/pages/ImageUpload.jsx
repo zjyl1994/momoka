@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Upload, Button, Form, Input, message, Progress, Space, Tabs, Tag } from 'antd';
+import { Upload, Button, Form, Input, message, Progress, Space, Tabs, Tag } from 'antd';
+import { ProCard } from '@ant-design/pro-card';
 import { InboxOutlined, UploadOutlined, DeleteOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 
@@ -162,147 +163,143 @@ const ImageUpload = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Form
-        form={form}
-        layout="vertical"
-      >
-        <Form.Item label="选择图片">
-          <Dragger {...uploadProps} style={{ marginBottom: '16px' }}>
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">点击或拖拽图片到此区域上传</p>
-            <p className="ant-upload-hint">
-              支持单个或批量上传。支持 JPG、PNG、GIF 格式，单个文件不超过 10MB
-            </p>
-          </Dragger>
+      <ProCard title="图片上传" bordered>
+        <Form form={form} layout="vertical">
+          <Form.Item label="选择图片">
+            <Dragger {...uploadProps} style={{ marginBottom: '16px' }}>
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">点击或拖拽图片到此区域上传</p>
+              <p className="ant-upload-hint">
+                支持单个或批量上传。支持 JPG、PNG、GIF 格式，单个文件不超过 10MB
+              </p>
+            </Dragger>
 
-          {fileList.length > 0 && (
-            <div style={{ marginTop: '16px' }}>
-              <h4>待上传文件 ({fileList.length}):</h4>
-              {fileList.map(file => (
-                <div key={file.uid} style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '6px',
-                  marginBottom: '8px'
-                }}>
-                  <div>
-                    <span style={{ fontWeight: 500 }}>{file.name}</span>
-                    <span style={{ color: '#666', marginLeft: '8px' }}>
-                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
+            {fileList.length > 0 && (
+              <div style={{ marginTop: '16px' }}>
+                <h4>待上传文件 ({fileList.length}):</h4>
+                {fileList.map(file => (
+                  <div key={file.uid} style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '6px',
+                    marginBottom: '8px'
+                  }}>
+                    <div>
+                      <span style={{ fontWeight: 500 }}>{file.name}</span>
+                      <span style={{ color: '#666', marginLeft: '8px' }}>
+                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => handleRemoveFile(file)}
+                      size="small"
+                    />
                   </div>
-                  <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleRemoveFile(file)}
-                    size="small"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </Form.Item>
-
-        <Form.Item
-          name="remark"
-          label="备注"
-        >
-          <TextArea
-            rows={3}
-            placeholder="为这批图片添加备注信息（可选）"
-            maxLength={500}
-            showCount
-          />
-        </Form.Item>
-
-        <Form.Item label="标签">
-          <div>
-            {tags.map((tag, index) => (
-              <Tag
-                key={tag}
-                closable
-                onClose={() => handleClose(tag)}
-                style={{ marginBottom: '8px' }}
-              >
-                {tag}
-              </Tag>
-            ))}
-            {inputVisible && (
-              <Input
-                type="text"
-                size="small"
-                style={{ width: 78 }}
-                value={inputValue}
-                onChange={handleInputChange}
-                onBlur={handleInputConfirm}
-                onPressEnter={handleInputConfirm}
-                autoFocus
-              />
+                ))}
+              </div>
             )}
-            {!inputVisible && (
-              <Tag
-                onClick={showInput}
-                style={{
-                  background: '#fff',
-                  borderStyle: 'dashed',
-                  cursor: 'pointer'
-                }}
-              >
-                <PlusOutlined /> 添加标签
-              </Tag>
-            )}
-          </div>
-        </Form.Item>
+          </Form.Item>
 
-        {uploading && (
-          <Form.Item>
-            <Progress 
-              percent={uploadProgress} 
-              status={uploadProgress === 100 ? 'success' : 'active'}
-              strokeColor={{
-                from: '#108ee9',
-                to: '#87d068',
-              }}
+          <Form.Item name="remark" label="备注">
+            <TextArea
+              rows={3}
+              placeholder="为这批图片添加备注信息（可选）"
+              maxLength={500}
+              showCount
             />
           </Form.Item>
-        )}
 
-        <Form.Item>
-          <Space>
-            <Button
-              type="primary"
-              icon={<UploadOutlined />}
-              onClick={handleUpload}
-              loading={uploading}
-              disabled={fileList.length === 0}
-            >
-              {uploading ? '上传中...' : '开始上传'}
-            </Button>
-            <Button
-              onClick={() => {
-                setFileList([]);
-                form.resetFields();
-                setTags([]);
-                setUploadResults([]);
-                setUploadProgress(0);
-              }}
-              disabled={uploading}
-            >
-              清空
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
+          <Form.Item label="标签">
+            <div>
+              {tags.map((tag, index) => (
+                <Tag
+                  key={tag}
+                  closable
+                  onClose={() => handleClose(tag)}
+                  style={{ marginBottom: '8px' }}
+                >
+                  {tag}
+                </Tag>
+              ))}
+              {inputVisible && (
+                <Input
+                  type="text"
+                  size="small"
+                  style={{ width: 78 }}
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onBlur={handleInputConfirm}
+                  onPressEnter={handleInputConfirm}
+                  autoFocus
+                />
+              )}
+              {!inputVisible && (
+                <Tag
+                  onClick={showInput}
+                  style={{
+                    background: '#fff',
+                    borderStyle: 'dashed',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <PlusOutlined /> 添加标签
+                </Tag>
+              )}
+            </div>
+          </Form.Item>
+
+          {uploading && (
+            <Form.Item>
+              <Progress 
+                percent={uploadProgress} 
+                status={uploadProgress === 100 ? 'success' : 'active'}
+                strokeColor={{
+                  from: '#108ee9',
+                  to: '#87d068',
+                }}
+              />
+            </Form.Item>
+          )}
+
+          <Form.Item>
+            <Space>
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                onClick={handleUpload}
+                loading={uploading}
+                disabled={fileList.length === 0}
+              >
+                {uploading ? '上传中...' : '开始上传'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setFileList([]);
+                  form.resetFields();
+                  setTags([]);
+                  setUploadResults([]);
+                  setUploadProgress(0);
+                }}
+                disabled={uploading}
+              >
+                清空
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </ProCard>
       
       {/* Upload results display */}
       {uploadResults.length > 0 && (
-        <Card 
+        <ProCard 
           title={(
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>上传结果 ({uploadResults.filter(r => r.success).length}/{uploadResults.length})</span>
@@ -331,8 +328,9 @@ const ImageUpload = () => {
                 </Button>
               </Space>
             </div>
-          )} 
+          )}
           style={{ marginTop: '24px' }}
+          bordered
         >
           {uploadResults.map((result, index) => (
             <div key={index} style={{
@@ -459,7 +457,7 @@ const ImageUpload = () => {
               )}
             </div>
           ))}
-        </Card>
+        </ProCard>
       )}
     </div>
   );
