@@ -101,16 +101,11 @@ const AdminLayout = () => {
           );
         }
       }}
-      actionsRender={() => [
-        <BellOutlined key="bell" style={{ fontSize: '16px' }} />
-      ]}
       menuProps={{
         selectedKeys: [location.pathname]
       }}
     >
-      <div style={{ minHeight: '100vh', background: '#f0f2f5' }}>
-        <Outlet />
-      </div>
+      <Outlet />
     </ProLayout>
   );
 };

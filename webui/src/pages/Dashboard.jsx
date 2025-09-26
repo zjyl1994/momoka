@@ -33,7 +33,7 @@ const Dashboard = () => {
   // Fetch dashboard data
   useEffect(() => {
     if (hasFetched.current) return;
-    
+
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
@@ -91,31 +91,28 @@ const Dashboard = () => {
       color: '#eb2f96'
     }
   ];
- 
-  return (
-    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
-      <ProCard
-        title="仪表板"
-        headerBordered
-        style={{ marginBottom: '24px' }}
-      >
-        {/* 统计卡片 */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          {stats.map((stat, index) => (
-            <Col xs={24} sm={12} lg={6} key={index}>
-              <ProCard loading={loading} hoverable>
-                <Statistic
-                  title={stat.title}
-                  value={stat.value}
-                  prefix={stat.icon}
-                  valueStyle={{ color: stat.color }}
-                />
-              </ProCard>
-            </Col>
-          ))}
-        </Row>
-      </ProCard>
 
+  return (
+    <ProCard
+      title="仪表板"
+      headerBordered
+      style={{ marginBottom: '24px' }}
+    >
+      {/* 统计卡片 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        {stats.map((stat, index) => (
+          <Col xs={24} sm={12} lg={6} key={index}>
+            <ProCard loading={loading} hoverable>
+              <Statistic
+                title={stat.title}
+                value={stat.value}
+                prefix={stat.icon}
+                valueStyle={{ color: stat.color }}
+              />
+            </ProCard>
+          </Col>
+        ))}
+      </Row>
       {/* 系统状态 */}
       <Row gutter={[16, 16]}>
         {/* 系统负载 */}
@@ -127,35 +124,35 @@ const Dashboard = () => {
                   <span style={{ fontSize: '13px', color: '#666' }}>1分钟负载</span>
                   <span style={{ fontSize: '15px', fontWeight: '600', color: '#1890ff' }}>{statData.load.load1.toFixed(2)}</span>
                 </div>
-                <Progress 
-                  percent={Math.min(statData.load.load1 * 25, 100)} 
-                  size="small" 
+                <Progress
+                  percent={Math.min(statData.load.load1 * 25, 100)}
+                  size="small"
                   strokeColor={statData.load.load1 > 2 ? '#ff4d4f' : statData.load.load1 > 1 ? '#faad14' : '#52c41a'}
                   showInfo={false}
                 />
               </div>
-              
+
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '13px', color: '#666' }}>5分钟负载</span>
                   <span style={{ fontSize: '15px', fontWeight: '600', color: '#52c41a' }}>{statData.load.load5.toFixed(2)}</span>
                 </div>
-                <Progress 
-                  percent={Math.min(statData.load.load5 * 25, 100)} 
-                  size="small" 
+                <Progress
+                  percent={Math.min(statData.load.load5 * 25, 100)}
+                  size="small"
                   strokeColor={statData.load.load5 > 2 ? '#ff4d4f' : statData.load.load5 > 1 ? '#faad14' : '#52c41a'}
                   showInfo={false}
                 />
               </div>
-              
+
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '13px', color: '#666' }}>15分钟负载</span>
                   <span style={{ fontSize: '15px', fontWeight: '600', color: '#faad14' }}>{statData.load.load15.toFixed(2)}</span>
                 </div>
-                <Progress 
-                  percent={Math.min(statData.load.load15 * 25, 100)} 
-                  size="small" 
+                <Progress
+                  percent={Math.min(statData.load.load15 * 25, 100)}
+                  size="small"
                   strokeColor={statData.load.load15 > 2 ? '#ff4d4f' : statData.load.load15 > 1 ? '#faad14' : '#52c41a'}
                   showInfo={false}
                 />
@@ -173,21 +170,21 @@ const Dashboard = () => {
                 </div>
                 <Progress percent={statData.disk.percent.toFixed(2)} strokeColor="#faad14" />
               </div>
-              
+
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span><DatabaseOutlined /> 总容量</span>
                   <span style={{ fontWeight: 600, color: '#1890ff' }}>{formatBytes(statData.disk.total)}</span>
                 </div>
               </div>
-              
+
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span><DatabaseOutlined /> 已使用</span>
                   <span style={{ fontWeight: 600, color: '#f5222d' }}>{formatBytes(statData.disk.used)}</span>
                 </div>
               </div>
-              
+
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span><DatabaseOutlined /> 可用空间</span>
@@ -224,7 +221,7 @@ const Dashboard = () => {
           </ProCard>
         </Col>
       </Row>
-    </div>
+    </ProCard>
   );
 };
 

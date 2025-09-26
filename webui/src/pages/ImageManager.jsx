@@ -422,7 +422,7 @@ const ImageManager = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <>
       <ProCard title="图片管理" bordered>
         <ProTable
           actionRef={actionRef}
@@ -553,7 +553,7 @@ const ImageManager = () => {
           }}
         />
       )}
-    </div>
+    </>
   );
 };
 

@@ -66,17 +66,15 @@ const Settings = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      <ProCard title="系统设置" bordered>
-        <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={tabItems}
-          size="large"
-          tabBarStyle={{ marginBottom: '24px' }}
-        />
-      </ProCard>
-    </div>
+    <ProCard title="系统设置" bordered>
+      <Tabs
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={tabItems}
+        size="large"
+        tabBarStyle={{ marginBottom: '24px' }}
+      />
+    </ProCard>
   );
 };
 

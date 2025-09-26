@@ -162,7 +162,7 @@ const ImageUpload = () => {
   };
 
   return (
-    <div style={{ padding: '24px' }}>
+    <>
       <ProCard title="图片上传" bordered>
         <Form form={form} layout="vertical">
           <Form.Item label="选择图片">
@@ -459,7 +459,7 @@ const ImageUpload = () => {
           ))}
         </ProCard>
       )}
-    </div>
+    </>
   );
 };
 

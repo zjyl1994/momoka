@@ -10,32 +10,6 @@
   padding: 0;
 }
 
-/* 后台管理系统全局样式 */
-.admin-layout {
-  min-height: 100vh;
-}
-
-.admin-content {
-  padding: 24px;
-  background: #f0f2f5;
-  min-height: calc(100vh - 64px);
-}
-
-.page-header {
-  background: #fff;
-  padding: 16px 24px;
-  margin-bottom: 24px;
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.content-card {
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-}
-
 /* 表格样式 */
 .ant-table {
   background: #fff;
