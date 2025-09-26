@@ -233,23 +233,22 @@ const FileListView = ({ folderId, onImageUpdate, onFolderUpdate, folderTree, onF
       <div style={{ 
         padding: '8px 16px', 
         borderBottom: '1px solid #f0f0f0', 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '12px',
         backgroundColor: '#fafafa'
       }}>
-        <Button 
-          type="text" 
-          icon={<ArrowLeftOutlined />}
-          onClick={handleGoBack}
-          disabled={!canGoBack()}
-          title="返回上级目录"
-        >
-          返回
-        </Button>
-        <Text type="secondary" style={{ fontSize: '14px' }}>
-          当前位置: {getCurrentPath()}
-        </Text>
+        <Space align="center">
+          <Button 
+            type="text" 
+            icon={<ArrowLeftOutlined />}
+            onClick={handleGoBack}
+            disabled={!canGoBack()}
+            title="返回上级目录"
+          >
+            返回
+          </Button>
+          <Text type="secondary">
+            当前位置: {getCurrentPath()}
+          </Text>
+        </Space>
       </div>
       
       <Table

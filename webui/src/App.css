@@ -10,29 +10,7 @@
   padding: 0;
 }
 
-/* 表格样式 */
-.ant-table {
-  background: #fff;
-}
-
-.ant-table-thead > tr > th {
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
-  font-weight: 600;
-}
-
-/* 按钮样式统一 */
-.ant-btn {
-  border-radius: 6px;
-}
-
-/* 卡片样式 */
-.ant-card {
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-/* Modal 样式确保正确显示 */
+/* Modal 样式确保正确显示 - 这是必要的修复，不与Pro组件重复 */
 .ant-modal-mask {
   z-index: 1000 !important;
 }
@@ -43,12 +21,4 @@
 
 .ant-modal {
   z-index: 1001 !important;
-}
-
-.ant-modal-confirm .ant-modal-body {
-  padding: 32px 32px 24px;
-}
-
-.ant-modal-confirm .ant-modal-confirm-btns {
-  margin-top: 24px;
 }

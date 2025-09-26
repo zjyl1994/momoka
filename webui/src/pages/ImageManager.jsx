@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Button, 
+  Space, 
+  Popconfirm, 
   message, 
   Modal, 
+  Form, 
   Input, 
-  Space, 
-  Tag,
-  Select,
-  Image,
+  Select, 
+  Tag, 
   Tooltip,
-  Popconfirm
+  Image
 } from 'antd';
 import { ProTable } from '@ant-design/pro-table';
 import { ProCard } from '@ant-design/pro-card';
@@ -30,13 +31,14 @@ const ImageManager = () => {
   const [editingImage, setEditingImage] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', remark: '', tags: [] });
   const [tagInputValue, setTagInputValue] = useState('');
-  const [previewImage, setPreviewImage] = useState(null);
-  const [previewVisible, setPreviewVisible] = useState(false);
+  const [imageList, setImageList] = useState([]);
 
   // Set page title
   useEffect(() => {
     document.title = '图片管理 - Momoka 图床';
   }, []);
+
+
 
   // Fetch images with ProTable format
   const fetchImages = async (params, sort, filter) => {
@@ -63,8 +65,10 @@ const ImageManager = () => {
       
       if (response.ok) {
         const data = await response.json();
+        const images = data.images || [];
+        setImageList(images); // 保存图片列表用于预览切换
         return {
-          data: data.images || [],
+          data: images,
           success: true,
           total: data.total || 0,
         };
@@ -218,12 +222,16 @@ const ImageManager = () => {
 
   // Handle preview
   const handlePreview = (url) => {
-    if (!url) {
-      message.error('图片链接无效');
-      return;
+    // 找到对应的图片在列表中的位置，然后触发该图片的预览
+    const imageElements = document.querySelectorAll('.ant-image img');
+    const targetImage = Array.from(imageElements).find(img => img.src === url);
+    if (targetImage) {
+      // 触发图片的点击事件来打开预览
+      targetImage.click();
+    } else {
+      // 如果找不到对应的图片元素，显示错误信息
+      message.error('无法预览该图片');
     }
-    setPreviewImage(url);
-    setPreviewVisible(true);
   };
 
   // Format file size
@@ -294,16 +302,17 @@ const ImageManager = () => {
           overflow: 'hidden'
         }}>
           {url ? (
-            <img
+            <Image
               src={url}
               alt={record.name}
               style={{
                 maxWidth: '100%',
                 maxHeight: '100%',
-                objectFit: 'cover',
-                cursor: 'pointer'
+                objectFit: 'cover'
               }}
-              onClick={() => handlePreview(url)}
+              preview={{
+                src: url,
+              }}
             />
           ) : (
             <div style={{ color: '#999', fontSize: '12px' }}>
@@ -375,13 +384,15 @@ const ImageManager = () => {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 120,
+      fixed: 'right',
       hideInSearch: true,
       render: (_, record) => (
-        <Space size="small">
+        <Space size={4}>
           <Tooltip title="预览">
             <Button
               type="text"
+              size="small"
               icon={<EyeOutlined />}
               onClick={() => record.url && handlePreview(record.url)}
               disabled={!record.url}
@@ -390,6 +401,7 @@ const ImageManager = () => {
           <Tooltip title="编辑">
             <Button
               type="text"
+              size="small"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
             />
@@ -397,6 +409,7 @@ const ImageManager = () => {
           <Tooltip title="复制链接">
             <Button
               type="text"
+              size="small"
               icon={<CopyOutlined />}
               onClick={() => record.url && handleCopyUrl(record.url)}
               disabled={!record.url}
@@ -411,6 +424,7 @@ const ImageManager = () => {
             <Tooltip title="删除">
               <Button
                 type="text"
+                size="small"
                 danger
                 icon={<DeleteOutlined />}
               />
@@ -424,24 +438,26 @@ const ImageManager = () => {
   return (
     <>
       <ProCard title="图片管理" bordered>
-        <ProTable
-          actionRef={actionRef}
-          columns={columns}
-          request={fetchImages}
-          rowKey="id"
-          pagination={{
-            defaultPageSize: 20,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            pageSizeOptions: ['20', '50', '100'],
-            showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-          }}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-          }}
-          tableAlertRender={({ selectedRowKeys, onCleanSelected }) => (
-            <Space size={24}>
+        <Image.PreviewGroup>
+          <ProTable
+            actionRef={actionRef}
+            columns={columns}
+            request={fetchImages}
+            rowKey="id"
+            scroll={{ x: 1000 }}
+            pagination={{
+              defaultPageSize: 20,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              pageSizeOptions: ['20', '50', '100'],
+              showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+            }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            tableAlertRender={({ selectedRowKeys, onCleanSelected }) => (
+              <Space size={24}>
               <span>
                 已选择 <strong>{selectedRowKeys.length}</strong> 项
               </span>
@@ -472,6 +488,7 @@ const ImageManager = () => {
             labelWidth: 'auto',
           }}
         />
+        </Image.PreviewGroup>
       </ProCard>
 
       {/* Edit Modal */}
@@ -538,21 +555,7 @@ const ImageManager = () => {
         )}
       </Modal>
 
-      {/* Preview Modal */}
-      {previewImage && (
-        <Image
-          width={200}
-          style={{ display: 'none' }}
-          src={previewImage}
-          preview={{
-            visible: previewVisible,
-            src: previewImage,
-            onVisibleChange: (visible) => {
-              setPreviewVisible(visible);
-            },
-          }}
-        />
-      )}
+
     </>
   );
 };
