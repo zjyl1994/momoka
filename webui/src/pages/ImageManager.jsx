@@ -5,31 +5,22 @@ import {
   Modal, 
   Input, 
   Space, 
-  Typography, 
   Tag,
   Select,
   Image,
   Tooltip,
-  Popconfirm,
-  Layout
+  Popconfirm
 } from 'antd';
 import { ProTable } from '@ant-design/pro-table';
 import { ProCard } from '@ant-design/pro-card';
-
-const { Content } = Layout;
 import { 
   DeleteOutlined, 
   EditOutlined, 
   EyeOutlined, 
-  SearchOutlined,
   TagsOutlined,
-  CopyOutlined,
-  ReloadOutlined
+  CopyOutlined
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
-
-const { Search } = Input;
-const { Text } = Typography;
 
 const ImageManager = () => {
   const actionRef = useRef();
@@ -480,15 +471,6 @@ const ImageManager = () => {
           search={{
             labelWidth: 'auto',
           }}
-          toolBarRender={() => [
-             <Button
-               key="refresh"
-               icon={<ReloadOutlined />}
-               onClick={() => actionRef.current?.reload()}
-             >
-               刷新
-             </Button>,
-           ]}
         />
       </ProCard>
 
