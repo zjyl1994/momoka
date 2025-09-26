@@ -35,7 +35,6 @@ const ImageManager = () => {
   const actionRef = useRef();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [tags, setTags] = useState({});
-  const [selectedTag, setSelectedTag] = useState('');
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingImage, setEditingImage] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', remark: '', tags: [] });
@@ -53,12 +52,12 @@ const ImageManager = () => {
     try {
       const page = params.current || 1;
       const pageSize = params.pageSize || 20;
-      const keyword = params.name || ''; // ProTable 搜索字段
-      const tag = selectedTag || ''; // 从状态获取标签筛选
+      const keyword = params.keyword || ''; // 使用keyword字段匹配后端接口
+      const tag = params.tag || ''; // 从搜索表单获取标签筛选
 
       const queryParams = new URLSearchParams({
         page: page.toString(),
-        page_size: pageSize.toString(),
+        pageSize: pageSize.toString(), // 使用pageSize匹配后端接口
       });
 
       if (keyword) {
@@ -201,7 +200,7 @@ const ImageManager = () => {
         message.success('更新成功');
         setEditModalVisible(false);
         setEditingImage(null);
-        fetchImages();
+        actionRef.current?.reload();
         fetchTags(); // Refresh tags in case new ones were added
       } else {
         const errorData = await response.json();
@@ -252,10 +251,46 @@ const ImageManager = () => {
 
   const columns = [
     {
+      title: '关键词',
+      dataIndex: 'keyword',
+      key: 'keyword',
+      hideInTable: true,
+      hideInSearch: false,
+      renderFormItem: () => (
+        <Input placeholder="搜索图片名称或备注" />
+      ),
+    },
+    {
+      title: '标签筛选',
+      dataIndex: 'tag',
+      key: 'tag',
+      hideInTable: true,
+      hideInSearch: false,
+      renderFormItem: () => (
+        <Select
+          placeholder="选择标签筛选"
+          allowClear
+          style={{ width: '100%' }}
+          showSearch
+          filterOption={(input, option) =>
+            option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          }
+        >
+          {Object.keys(tags).map((tag) => (
+            <Select.Option key={tag} value={tag}>
+              <TagsOutlined style={{ marginRight: '4px' }} />
+              {tag} <span style={{ color: '#999', fontSize: '12px' }}>({tags[tag]})</span>
+            </Select.Option>
+          ))}
+        </Select>
+      ),
+    },
+    {
       title: '图片',
       dataIndex: 'url',
       key: 'image',
       width: 120,
+      hideInSearch: true,
       render: (url, record) => (
         <div style={{ 
           width: '80px', 
@@ -292,7 +327,7 @@ const ImageManager = () => {
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
-      hideInSearch: false,
+      hideInSearch: true,
       render: (text) => (
         <Tooltip title={text}>
           {text}
@@ -304,6 +339,7 @@ const ImageManager = () => {
       dataIndex: 'remark',
       key: 'remark',
       ellipsis: true,
+      hideInSearch: true,
       render: (text) => text || '-',
     },
     {
@@ -311,6 +347,7 @@ const ImageManager = () => {
       dataIndex: 'tags',
       key: 'tags',
       width: 200,
+      hideInSearch: true,
       render: (tags) => (
         <div>
           {tags && tags.length > 0 ? (
@@ -333,6 +370,7 @@ const ImageManager = () => {
       dataIndex: 'file_size',
       key: 'file_size',
       width: 100,
+      hideInSearch: true,
       render: (size) => formatFileSize(size),
     },
     {
@@ -340,12 +378,14 @@ const ImageManager = () => {
       dataIndex: 'create_time',
       key: 'create_time',
       width: 150,
+      hideInSearch: true,
       render: (time) => formatDate(time * 1000),
     },
     {
       title: '操作',
       key: 'action',
       width: 150,
+      hideInSearch: true,
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="预览">
@@ -441,29 +481,6 @@ const ImageManager = () => {
             labelWidth: 'auto',
           }}
           toolBarRender={() => [
-             <Select
-               key="tag-filter"
-               placeholder="选择标签筛选"
-               allowClear
-               value={selectedTag || undefined}
-               style={{ width: 200 }}
-               showSearch
-               filterOption={(input, option) =>
-                 option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
-               }
-               onChange={(value) => {
-                 setSelectedTag(value || '');
-                 // 触发表格刷新
-                 actionRef.current?.reload();
-               }}
-             >
-               {Object.keys(tags).map((tag) => (
-                 <Select.Option key={tag} value={tag}>
-                   <TagsOutlined style={{ marginRight: '4px' }} />
-                   {tag} <span style={{ color: '#999', fontSize: '12px' }}>({tags[tag]})</span>
-                 </Select.Option>
-               ))}
-             </Select>,
              <Button
                key="refresh"
                icon={<ReloadOutlined />}
