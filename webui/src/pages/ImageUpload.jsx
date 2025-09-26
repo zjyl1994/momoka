@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Upload, Button, Form, Input, message, Progress, Space, Tabs, Tag } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
 import { InboxOutlined, UploadOutlined, DeleteOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
@@ -6,6 +6,39 @@ import { authFetch } from '../utils/api';
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
+
+// 文件项组件，使用 React.memo 优化
+const FileItem = React.memo(({ file, onRemove }) => {
+  const fileSizeMB = useMemo(() => {
+    return (file.size / 1024 / 1024).toFixed(2);
+  }, [file.size]);
+
+  return (
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center',
+      padding: '8px 12px',
+      border: '1px solid #d9d9d9',
+      borderRadius: '6px',
+      marginBottom: '8px'
+    }}>
+      <div>
+        <span style={{ fontWeight: 500 }}>{file.name}</span>
+        <span style={{ color: '#666', marginLeft: '8px' }}>
+          ({fileSizeMB} MB)
+        </span>
+      </div>
+      <Button
+        type="text"
+        danger
+        icon={<DeleteOutlined />}
+        onClick={() => onRemove(file)}
+        size="small"
+      />
+    </div>
+  );
+});
 
 const ImageUpload = () => {
   const [form] = Form.useForm();
@@ -22,26 +55,49 @@ const ImageUpload = () => {
     document.title = '图片上传 - Momoka 图床';
   }, []);
 
+  // 异步文件验证函数
+  const validateFile = useCallback((file) => {
+    return new Promise((resolve) => {
+      // 使用 setTimeout 让验证异步执行，避免阻塞UI
+      setTimeout(() => {
+        const isImage = file.type.startsWith('image/');
+        if (!isImage) {
+          message.error('只能上传图片文件!');
+          resolve(false);
+          return;
+        }
+        const isLt10M = file.size / 1024 / 1024 < 10;
+        if (!isLt10M) {
+          message.error('图片大小不能超过 10MB!');
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      }, 0);
+    });
+  }, []);
+
+  // 优化后的文件处理函数
+  const handleFileChange = useCallback(async (info) => {
+    const newFiles = info.fileList.filter(file => file.status !== 'error');
+    
+    // 对新添加的文件进行异步验证
+    const validatedFiles = [];
+    for (const file of newFiles) {
+      if (file.status === 'done' || await validateFile(file.originFileObj || file)) {
+        validatedFiles.push(file);
+      }
+    }
+    
+    setFileList(validatedFiles);
+  }, [validateFile]);
+
   const uploadProps = {
     name: 'file',
     multiple: true,
     showUploadList: false, // Hide default upload list
-    beforeUpload: (file) => {
-      const isImage = file.type.startsWith('image/');
-      if (!isImage) {
-        message.error('只能上传图片文件!');
-        return false;
-      }
-      const isLt10M = file.size / 1024 / 1024 < 10;
-      if (!isLt10M) {
-        message.error('图片大小不能超过 10MB!');
-        return false;
-      }
-      return false; // Prevent auto upload
-    },
-    onChange: (info) => {
-      setFileList(info.fileList);
-    },
+    beforeUpload: () => false, // 简化 beforeUpload，只阻止自动上传
+    onChange: handleFileChange,
     onDrop(e) {
       console.log('Dropped files', e.dataTransfer.files);
     },
@@ -156,10 +212,27 @@ const ImageUpload = () => {
     }
   };
 
-  const handleRemoveFile = (file) => {
-    const newFileList = fileList.filter(item => item.uid !== file.uid);
-    setFileList(newFileList);
-  };
+  const handleRemoveFile = useCallback((file) => {
+    setFileList(prevList => prevList.filter(item => item.uid !== file.uid));
+  }, []);
+
+  // 使用 useMemo 优化文件列表渲染
+  const fileListComponent = useMemo(() => {
+    if (fileList.length === 0) return null;
+
+    return (
+      <div style={{ marginTop: '16px' }}>
+        <h4>待上传文件 ({fileList.length}):</h4>
+        {fileList.map(file => (
+          <FileItem 
+            key={file.uid} 
+            file={file} 
+            onRemove={handleRemoveFile}
+          />
+        ))}
+      </div>
+    );
+  }, [fileList, handleRemoveFile]);
 
   return (
     <>
@@ -176,36 +249,7 @@ const ImageUpload = () => {
               </p>
             </Dragger>
 
-            {fileList.length > 0 && (
-              <div style={{ marginTop: '16px' }}>
-                <h4>待上传文件 ({fileList.length}):</h4>
-                {fileList.map(file => (
-                  <div key={file.uid} style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                    marginBottom: '8px'
-                  }}>
-                    <div>
-                      <span style={{ fontWeight: 500 }}>{file.name}</span>
-                      <span style={{ color: '#666', marginLeft: '8px' }}>
-                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    </div>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleRemoveFile(file)}
-                      size="small"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            {fileListComponent}
           </Form.Item>
 
           <Form.Item name="remark" label="备注">

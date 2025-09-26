@@ -165,12 +165,16 @@ const ImageManager = () => {
   // Handle edit
   const handleEdit = (image) => {
     setEditingImage(image);
+    
+    // 确保 tags 是数组类型
+    const tagsArray = Array.isArray(image.tags) ? image.tags : [];
+    
     setEditForm({
       name: image.name || '',
       remark: image.remark || '',
-      tags: image.tags || []
+      tags: tagsArray
     });
-    setTagInputValue((image.tags || []).join(', ')); // Initialize tag input value
+    setTagInputValue(tagsArray.join(', ')); // Initialize tag input value
     setEditModalVisible(true);
   };
 
@@ -348,22 +352,27 @@ const ImageManager = () => {
       key: 'tags',
       width: 200,
       hideInSearch: true,
-      render: (tags) => (
-        <div>
-          {tags && tags.length > 0 ? (
-            tags.slice(0, 2).map((tag, index) => (
-              <Tag key={index} size="small">
-                {tag}
-              </Tag>
-            ))
-          ) : (
-            <span style={{ color: '#999' }}>无标签</span>
-          )}
-          {tags && tags.length > 2 && (
-            <Tag size="small">+{tags.length - 2}</Tag>
-          )}
-        </div>
-      ),
+      render: (tags) => {
+        // 确保 tags 是数组类型
+        const tagsArray = Array.isArray(tags) ? tags : [];
+        
+        return (
+          <div>
+            {tagsArray.length > 0 ? (
+              tagsArray.slice(0, 2).map((tag, index) => (
+                <Tag key={index} size="small">
+                  {tag}
+                </Tag>
+              ))
+            ) : (
+              <span style={{ color: '#999' }}>无标签</span>
+            )}
+            {tagsArray.length > 2 && (
+              <Tag size="small">+{tagsArray.length - 2}</Tag>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: '文件大小',
