@@ -140,10 +140,19 @@ const ImageUpload = () => {
 
   // 高度优化的文件处理函数，使用防抖和智能验证
   const handleFileChange = useCallback(async (info) => {
-    const newFiles = info.fileList.filter(file => file.status !== 'error');
+    // 只处理新添加的文件，避免保留之前清空的文件
+    const newFiles = info.fileList.filter(file => 
+      file.status !== 'error' && 
+      (file.status === 'uploading' || file.status === 'done' || !file.status)
+    );
+    
+    // 如果当前文件列表为空（刚清空），只保留真正新选择的文件
+    const finalFiles = fileList.length === 0 ? 
+      newFiles.filter(file => file.originFileObj) : 
+      newFiles;
     
     // 立即更新UI显示文件（先显示，后验证）
-    setFileList(newFiles);
+    setFileList(finalFiles);
     
     // 避免重复验证
     if (validationInProgressRef.current) {
@@ -151,14 +160,14 @@ const ImageUpload = () => {
     }
     
     // 异步验证文件，避免阻塞UI
-    if (newFiles.length > 0) {
+    if (finalFiles.length > 0) {
       validationInProgressRef.current = true;
       
       try {
-        const validatedFiles = await batchValidateFiles(newFiles);
+        const validatedFiles = await batchValidateFiles(finalFiles);
         
         // 使用防抖更新，避免频繁渲染
-        if (validatedFiles.length !== newFiles.length) {
+        if (validatedFiles.length !== finalFiles.length) {
           debouncedSetFileList(validatedFiles);
         }
       } catch (error) {
@@ -174,6 +183,7 @@ const ImageUpload = () => {
     name: 'file',
     multiple: true,
     showUploadList: false, // Hide default upload list
+    fileList: fileList, // 控制Upload组件的内部文件列表状态
     beforeUpload: () => false, // 简化 beforeUpload，只阻止自动上传
     onChange: handleFileChange,
     onDrop(e) {
@@ -404,6 +414,16 @@ const ImageUpload = () => {
               </Button>
               <Button
                 onClick={() => {
+                  // 清除防抖定时器
+                  if (debounceTimerRef.current) {
+                    clearTimeout(debounceTimerRef.current);
+                    debounceTimerRef.current = null;
+                  }
+                  
+                  // 重置验证状态
+                  validationInProgressRef.current = false;
+                  
+                  // 清除所有状态
                   setFileList([]);
                   form.resetFields();
                   setTags([]);
