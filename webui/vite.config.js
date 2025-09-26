@@ -24,8 +24,18 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000, // 调整chunk大小警告限制为1000 kB
     rollupOptions: {
       output: {
-        manualChunks: {
-          ui: ['antd'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('antd')) {
+              return 'antd-vendor';
+            }
+            if (id.includes('react')) {
+              return 'react-vendor';
+            }
+            return 'vendor';
+          } else {
+            return 'app';
+          }
         }
       }
     }
