@@ -21,7 +21,7 @@ export default defineConfig({
     }
   },
   build: {
-    chunkSizeWarningLimit: 1000, // 调整chunk大小警告限制为1000 kB
+    chunkSizeWarningLimit: Infinity,// disable: gziped < 500KB
     rollupOptions: {
       output: {
         manualChunks: (id) => {
