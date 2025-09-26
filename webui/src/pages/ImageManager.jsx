@@ -375,23 +375,28 @@ const ImageManager = () => {
         const tagsArray = Array.isArray(tags) ? tags : [];
         
         return (
-          <div>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '4px',
+            maxHeight: '120px',
+            overflowY: 'auto'
+          }}>
             {tagsArray.length > 0 ? (
-              tagsArray.slice(0, 2).map((tag, index) => (
+              tagsArray.map((tag, index) => (
                 <Tag 
                   key={index} 
                   size="small"
+                  style={{ 
+                    margin: 0,
+                    alignSelf: 'flex-start'
+                  }}
                 >
                   {tag}
                 </Tag>
               ))
             ) : (
               <span style={{ color: '#999' }}>无标签</span>
-            )}
-            {tagsArray.length > 2 && (
-              <Tooltip title={`还有 ${tagsArray.length - 2} 个标签: ${tagsArray.slice(2).join(', ')}`}>
-                <Tag size="small" style={{ cursor: 'help' }}>+{tagsArray.length - 2}</Tag>
-              </Tooltip>
             )}
           </div>
         );
