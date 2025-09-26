@@ -87,7 +87,6 @@ const AdminLayout = () => {
         src: null,
         size: 'small',
         icon: <UserOutlined />,
-        title: user?.name || '管理员',
         render: (props, dom) => {
           return (
             <Dropdown
