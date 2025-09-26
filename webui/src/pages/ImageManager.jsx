@@ -25,6 +25,7 @@ import { authFetch } from '../utils/api';
 
 const ImageManager = () => {
   const actionRef = useRef();
+  const formRef = useRef();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [tags, setTags] = useState({});
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -259,9 +260,23 @@ const ImageManager = () => {
       key: 'keyword',
       hideInTable: true,
       hideInSearch: false,
-      renderFormItem: () => (
-        <Input placeholder="搜索图片名称或备注" />
-      ),
+      renderFormItem: (item, { type, defaultRender, formItemProps, fieldProps, ...rest }, form) => {
+        return (
+          <Input 
+            placeholder="搜索图片名称或备注"
+            {...fieldProps}
+            onChange={(e) => {
+              // 更新表单值
+              form.setFieldsValue({ keyword: e.target.value });
+              // 关键词输入变更时防抖查询
+              clearTimeout(window.keywordSearchTimer);
+              window.keywordSearchTimer = setTimeout(() => {
+                formRef.current?.submit();
+              }, 500); // 500ms防抖
+            }}
+          />
+        );
+      },
     },
     {
       title: '标签筛选',
@@ -269,24 +284,35 @@ const ImageManager = () => {
       key: 'tag',
       hideInTable: true,
       hideInSearch: false,
-      renderFormItem: () => (
-        <Select
-          placeholder="选择标签筛选"
-          allowClear
-          style={{ width: '100%' }}
-          showSearch
-          filterOption={(input, option) =>
-            option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
-          }
-        >
-          {Object.keys(tags).map((tag) => (
-            <Select.Option key={tag} value={tag}>
-              <TagsOutlined style={{ marginRight: '4px' }} />
-              {tag} <span style={{ color: '#999', fontSize: '12px' }}>({tags[tag]})</span>
-            </Select.Option>
-          ))}
-        </Select>
-      ),
+      renderFormItem: (item, { type, defaultRender, formItemProps, fieldProps, ...rest }, form) => {
+        return (
+          <Select
+            placeholder="选择标签筛选"
+            allowClear
+            style={{ width: '100%' }}
+            showSearch
+            filterOption={(input, option) =>
+              option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            {...fieldProps}
+            onChange={(value) => {
+              // 更新表单值
+              form.setFieldsValue({ tag: value });
+              // 标签选择变更时立即触发查询
+              setTimeout(() => {
+                formRef.current?.submit();
+              }, 0);
+            }}
+          >
+            {Object.keys(tags).map((tag) => (
+              <Select.Option key={tag} value={tag}>
+                <TagsOutlined style={{ marginRight: '4px' }} />
+                {tag} <span style={{ color: '#999', fontSize: '12px' }}>({tags[tag]})</span>
+              </Select.Option>
+            ))}
+          </Select>
+        );
+      },
     },
     {
       title: '图片',
@@ -339,14 +365,6 @@ const ImageManager = () => {
       ),
     },
     {
-      title: '备注',
-      dataIndex: 'remark',
-      key: 'remark',
-      ellipsis: true,
-      hideInSearch: true,
-      render: (text) => text || '-',
-    },
-    {
       title: '标签',
       dataIndex: 'tags',
       key: 'tags',
@@ -360,7 +378,10 @@ const ImageManager = () => {
           <div>
             {tagsArray.length > 0 ? (
               tagsArray.slice(0, 2).map((tag, index) => (
-                <Tag key={index} size="small">
+                <Tag 
+                  key={index} 
+                  size="small"
+                >
                   {tag}
                 </Tag>
               ))
@@ -368,7 +389,9 @@ const ImageManager = () => {
               <span style={{ color: '#999' }}>无标签</span>
             )}
             {tagsArray.length > 2 && (
-              <Tag size="small">+{tagsArray.length - 2}</Tag>
+              <Tooltip title={`还有 ${tagsArray.length - 2} 个标签: ${tagsArray.slice(2).join(', ')}`}>
+                <Tag size="small" style={{ cursor: 'help' }}>+{tagsArray.length - 2}</Tag>
+              </Tooltip>
             )}
           </div>
         );
@@ -389,6 +412,14 @@ const ImageManager = () => {
       width: 150,
       hideInSearch: true,
       render: (time) => formatDate(time * 1000),
+    },
+    {
+      title: '备注',
+      dataIndex: 'remark',
+      key: 'remark',
+      ellipsis: true,
+      hideInSearch: true,
+      render: (text) => text || '-',
     },
     {
       title: '操作',
@@ -450,6 +481,7 @@ const ImageManager = () => {
         <Image.PreviewGroup>
           <ProTable
             actionRef={actionRef}
+            formRef={formRef}
             columns={columns}
             request={fetchImages}
             rowKey="id"
@@ -495,6 +527,8 @@ const ImageManager = () => {
           )}
           search={{
             labelWidth: 'auto',
+            resetText: '重置',
+            searchText: '查询',
           }}
         />
         </Image.PreviewGroup>
