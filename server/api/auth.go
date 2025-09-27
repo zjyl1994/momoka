@@ -123,3 +123,9 @@ func RedeemChallenge(c *fiber.Ctx) error {
 	resp := vars.CapInstance.RedeemChallenge(&body)
 	return c.JSON(resp)
 }
+
+func AuthStatusHandler(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"skip_auth": vars.SkipAuth,
+	})
+}

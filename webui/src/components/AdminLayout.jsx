@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProLayout } from '@ant-design/pro-layout';
-import { Avatar, Dropdown, Space } from 'antd';
+import { Avatar, Dropdown, Space, Tag } from 'antd';
 import {
   DashboardOutlined,
   FileImageOutlined,
@@ -12,11 +12,24 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getAuthConfig } from '../utils/api';
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isDevMode, setIsDevMode] = useState(false);
+
+  // 检查是否为开发模式
+  useEffect(() => {
+    const checkDevMode = async () => {
+      const authConfig = getAuthConfig();
+      if (authConfig && authConfig.skip_auth) {
+        setIsDevMode(true);
+      }
+    };
+    checkDevMode();
+  }, []);
 
   // 处理退出登录
   const handleLogout = () => {
@@ -60,7 +73,16 @@ const AdminLayout = () => {
 
   return (
     <ProLayout
-      title="Momoka 图床"
+      title={
+        <Space>
+          <span>Momoka 图床</span>
+          {isDevMode && (
+            <Tag color="orange" style={{ fontSize: '12px' }}>
+              开发模式
+            </Tag>
+          )}
+        </Space>
+      }
       logo={false}
       layout="mix"
       navTheme="dark"

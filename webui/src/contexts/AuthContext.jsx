@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { validateToken, set401Handler } from '../utils/api';
+import { validateToken, set401Handler, checkAuthStatus } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -28,7 +28,19 @@ export const AuthProvider = ({ children }) => {
     // 设置全局401错误处理器
     set401Handler(handle401Error);
 
-    const checkAuth = async () => {
+    const initializeAuth = async () => {
+      // 首先检查后端认证配置
+      const authStatus = await checkAuthStatus();
+      
+      if (authStatus.skip_auth) {
+        // SkipAuth 模式：直接设置为已认证状态
+        setIsAuthenticated(true);
+        setUser({ username: 'admin', name: '管理员 (开发模式)' });
+        setLoading(false);
+        return;
+      }
+      
+      // 正常认证模式：检查本地 token
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
       
@@ -47,7 +59,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     };
     
-    checkAuth();
+    initializeAuth();
   }, []);
 
   const login = async (username, password, remember = false, capToken = '') => {

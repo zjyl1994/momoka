@@ -10,7 +10,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [capToken, setCapToken] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   // Set page title
@@ -31,6 +31,13 @@ const Login = () => {
       };
     }
   }, []);
+
+  // 如果已经认证，自动跳转到管理页面
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, navigate]);
 
   const onFinish = async (values) => {
     if (!capToken) {

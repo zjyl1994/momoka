@@ -3,6 +3,9 @@
 // 全局401错误处理回调
 let global401Handler = null;
 
+// 认证状态缓存
+let authStatusCache = null;
+
 // 设置全局401错误处理回调
 export const set401Handler = (handler) => {
   global401Handler = handler;
@@ -69,3 +72,28 @@ export const validateToken = async () => {
     return false;
   }
 };
+
+// 检查后端的认证状态
+export const checkAuthStatus = async () => {
+  // 使用缓存避免重复请求
+  if (authStatusCache) {
+    return authStatusCache;
+  }
+  
+  try {
+    const response = await fetch('/api/auth-status');
+    if (!response.ok) {
+      throw new Error('Failed to fetch auth status');
+    }
+    const data = await response.json();
+    authStatusCache = data;
+    return data;
+  } catch (error) {
+    console.error('Error checking auth status:', error);
+    // 出错时，默认为需要认证
+    return { skip_auth: false };
+  }
+};
+
+// 获取认证配置（用于其他模块）
+export const getAuthConfig = () => authStatusCache;
