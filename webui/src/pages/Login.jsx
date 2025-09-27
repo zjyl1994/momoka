@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, message, Spin, Checkbox, Alert } from 'antd';
+import { Form, Input, Button, Card, Spin, Checkbox, Alert, App } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ const Login = () => {
   const [capToken, setCapToken] = useState('');
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { message } = App.useApp();
 
   // Set page title
   useEffect(() => {
