@@ -16,7 +16,9 @@ const ProtectedRoute = ({ children }) => {
         height: '100vh',
         background: '#f5f5f5'
       }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" tip="加载中..." spinning={true}>
+          <div style={{ minHeight: '200px' }} />
+        </Spin>
       </div>
     );
   }
