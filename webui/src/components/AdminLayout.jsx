@@ -12,39 +12,49 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSite } from '../contexts/SiteContext';
 import { getAuthConfig } from '../utils/api';
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
+  const { siteName, isDevMode, initialized } = useSite();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isDevMode, setIsDevMode] = useState(false);
-  const [siteName, setSiteName] = useState('Momoka 图床');
 
-  // 检查是否为开发模式并获取站点名称
+  console.log('[AdminLayout] Current values:', { siteName, isDevMode, initialized, pathname: location.pathname });
+
+  // 设置页面标题
   useEffect(() => {
-    const loadSiteInfo = async () => {
-      try {
-        const response = await fetch('/api/auth-status');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.skip_auth) {
-            setIsDevMode(true);
-          }
-          const currentSiteName = data.site_name || 'Momoka 图床';
-          setSiteName(currentSiteName);
-        }
-      } catch (error) {
-        console.error('Failed to load site info:', error);
-        // 如果获取失败，尝试从缓存的authConfig获取
-        const authConfig = getAuthConfig();
-        if (authConfig && authConfig.skip_auth) {
-          setIsDevMode(true);
-        }
+    console.log('[AdminLayout] useEffect triggered:', { siteName, initialized, pathname: location.pathname });
+    
+    // 只有在站点信息初始化完成后才设置标题
+    if (!initialized) {
+      console.log('[AdminLayout] Not initialized yet, skipping title update');
+      return;
+    }
+    
+    // 根据当前路由设置不同的页面标题
+    const getPageTitle = () => {
+      const path = location.pathname;
+      let pageTitle = '管理后台';
+      
+      if (path === '/admin') {
+        pageTitle = '仪表板';
+      } else if (path === '/admin/images-upload') {
+        pageTitle = '上传图片';
+      } else if (path === '/admin/images') {
+        pageTitle = '图片管理';
+      } else if (path === '/admin/settings') {
+        pageTitle = '系统设置';
       }
+      
+      return `${pageTitle} - ${siteName}`;
     };
-    loadSiteInfo();
-  }, []);
+
+    const newTitle = getPageTitle();
+    console.log('[AdminLayout] Setting document.title to:', newTitle);
+    document.title = newTitle;
+  }, [location.pathname, siteName, initialized]);
 
   // 处理退出登录
   const handleLogout = () => {

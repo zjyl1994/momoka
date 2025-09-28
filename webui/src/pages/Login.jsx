@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Spin, Checkbox, Alert, App } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useSite } from '../contexts/SiteContext';
 import { useNavigate } from 'react-router-dom';
 import '@cap.js/widget';
 import './Login.css';
@@ -10,31 +11,18 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [capToken, setCapToken] = useState('');
-  const [siteName, setSiteName] = useState('Momoka 图床');
+  const { siteName, initialized } = useSite();
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { message } = App.useApp();
 
-  // Set page title and load site name
+  // Set page title and setup cap widget
   useEffect(() => {
-    const loadSiteInfo = async () => {
-      try {
-        const response = await fetch('/api/auth-status');
-        if (response.ok) {
-          const data = await response.json();
-          const currentSiteName = data.site_name || 'Momoka 图床';
-          setSiteName(currentSiteName);
-          document.title = `登录 - ${currentSiteName}`;
-        } else {
-          document.title = '登录 - Momoka 图床';
-        }
-      } catch (error) {
-        console.error('Failed to load site info:', error);
-        document.title = '登录 - Momoka 图床';
-      }
-    };
-
-    loadSiteInfo();
+    // 只有在站点信息初始化完成后才设置标题
+    if (!initialized) return;
+    
+    // 设置页面标题
+    document.title = `登录 - ${siteName}`;
 
     // Add cap widget event listener
     const capWidget = document.getElementById('cap');
@@ -49,7 +37,7 @@ const Login = () => {
         capWidget.removeEventListener('solve', handleSolve);
       };
     }
-  }, []);
+  }, [siteName, initialized]);
 
   // 如果已经认证，自动跳转到管理页面
   useEffect(() => {

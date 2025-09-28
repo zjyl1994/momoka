@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Form, Input, Button, message, Spin, Typography } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
+import { useSite } from '../contexts/SiteContext';
 
 const { Text } = Typography;
 
@@ -9,6 +10,7 @@ const SiteNameSettings = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { updateSiteName } = useSite();
 
   // Load settings data
   const loadSettings = async () => {
@@ -51,8 +53,8 @@ const SiteNameSettings = () => {
 
       if (response.ok) {
         message.success('站点名称设置保存成功');
-        // 刷新页面标题
-        document.title = `系统设置 - ${updateData.site_name}`;
+        // 更新全局站点名称
+        updateSiteName(updateData.site_name);
       } else {
         message.error('设置保存失败');
       }

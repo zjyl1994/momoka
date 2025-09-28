@@ -8,15 +8,19 @@ import SystemInfo from './SystemInfo';
 import BackupManagement from './BackupManagement';
 import BaseUrlSettings from './BaseUrlSettings';
 import SiteNameSettings from './SiteNameSettings';
+import { useSite } from '../contexts/SiteContext';
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'system-info';
+  const { siteName, initialized } = useSite();
 
   // Set page title
   useEffect(() => {
-    document.title = '系统设置 - Momoka 图床';
-  }, []);
+    // 只有在站点信息初始化完成后才设置标题
+    if (!initialized) return;
+    document.title = `系统设置 - ${siteName}`;
+  }, [siteName, initialized]);
 
   // Handle tab change
   const handleTabChange = (key) => {

@@ -22,6 +22,7 @@ import {
   CopyOutlined
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
+import { useSite } from '../contexts/SiteContext';
 
 const ImageManager = () => {
   const actionRef = useRef();
@@ -33,11 +34,14 @@ const ImageManager = () => {
   const [editForm, setEditForm] = useState({ name: '', remark: '', tags: [] });
   const [tagInputValue, setTagInputValue] = useState('');
   const [imageList, setImageList] = useState([]);
+  const { siteName, initialized } = useSite();
 
   // Set page title
   useEffect(() => {
-    document.title = '图片管理 - Momoka 图床';
-  }, []);
+    // 只有在站点信息初始化完成后才设置标题
+    if (!initialized) return;
+    document.title = `图片管理 - ${siteName}`;
+  }, [siteName, initialized]);
 
 
 

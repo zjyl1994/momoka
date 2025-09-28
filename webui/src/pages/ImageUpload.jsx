@@ -3,6 +3,7 @@ import { Upload, Button, Form, Input, message, Space, Tabs, Tag, Progress } from
 import { ProCard } from '@ant-design/pro-card';
 import { InboxOutlined, UploadOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
+import { useSite } from '../contexts/SiteContext';
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -170,11 +171,14 @@ const ImageUpload = () => {
   
   // 标签状态
   const [tags, setTags] = useState([]);
+  const { siteName, initialized } = useSite();
 
   // 设置页面标题
   useEffect(() => {
-    document.title = '图片上传 - Momoka 图床';
-  }, []);
+    // 只有在站点信息初始化完成后才设置标题
+    if (!initialized) return;
+    document.title = `上传图片 - ${siteName}`;
+  }, [siteName, initialized]);
 
   // 文件验证
   const beforeUpload = useCallback((file) => {

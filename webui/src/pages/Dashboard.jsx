@@ -7,6 +7,7 @@ import {
   DatabaseOutlined,
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
+import { useSite } from '../contexts/SiteContext';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -24,11 +25,14 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);
+  const { siteName, initialized } = useSite();
 
   // Set page title
   useEffect(() => {
-    document.title = '仪表板 - Momoka 图床';
-  }, []);
+    // 只有在站点信息初始化完成后才设置标题
+    if (!initialized) return;
+    document.title = `仪表板 - ${siteName}`;
+  }, [siteName, initialized]);
 
   // Fetch dashboard data
   useEffect(() => {

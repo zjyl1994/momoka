@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ConfigProvider, App as AntdApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { AuthProvider } from './contexts/AuthContext';
+import { SiteProvider } from './contexts/SiteContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import Login from './pages/Login';
@@ -16,8 +17,9 @@ function App() {
   return (
     <ConfigProvider locale={zhCN}>
       <AntdApp>
-        <AuthProvider>
-          <Router>
+        <SiteProvider>
+          <AuthProvider>
+            <Router>
             <Routes>
               {/* 登录页面 */}
               <Route path="/login" element={<Login />} />
@@ -64,9 +66,10 @@ function App() {
                   <a href="/admin">返回首页</a>
                 </div>
               } />
-            </Routes>
-          </Router>
-        </AuthProvider>
+              </Routes>
+            </Router>
+          </AuthProvider>
+        </SiteProvider>
       </AntdApp>
     </ConfigProvider>
   );
