@@ -35,6 +35,9 @@ importers:
       '@ant-design/v5-patch-for-react-19':
         specifier: ^1.0.3
         version: 1.0.3(antd@5.27.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      '@cap.js/wasm':
+        specifier: ^0.0.6
+        version: 0.0.6
       '@cap.js/widget':
         specifier: ^0.1.28
         version: 0.1.28
@@ -265,6 +268,9 @@ packages:
   '@babel/runtime@7.28.3':
     resolution: {integrity: sha512-9uIQ10o0WGdpP6GDhXcdOJPJuDgFtIDtN/9+ArJQ2NAfAmiuhTQdzkaTGR33v43GYS2UrSA0eX2pPPHoFVvpxA==}
     engines: {node: '>=6.9.0'}
+
+  '@cap.js/wasm@0.0.6':
+    resolution: {integrity: sha512-QhQPZ6QKQeUdjhPM1I6Y3TKhc4Q59wfFHGpkwUW1BYqHlaLUnsMvHX0c1Bt45ZDBzKD0cYj7V7fdHYkPNKN8MQ==}
 
   '@cap.js/widget@0.1.28':
     resolution: {integrity: sha512-YIOVLUXOE2uNvlg1SbL/ZuzTatwqA3GIvdPpbv6X4YCRIcWijQwzEAiEcHBPJpwkMNTHxi70mSinDwNSgRzpkA==}
@@ -1945,6 +1951,8 @@ snapshots:
       react-dom: 19.1.1(react@19.1.1)
 
   '@babel/runtime@7.28.3': {}
+
+  '@cap.js/wasm@0.0.6': {}
 
   '@cap.js/widget@0.1.28': {}
 

@@ -82,6 +82,26 @@
   border-color: #40a9ff;
 }
 
+/* 验证码生成期间的按钮动画 */
+.login-button.captcha-generating {
+  background: linear-gradient(90deg, #1890ff, #40a9ff, #1890ff);
+  background-size: 200% 100%;
+  animation: captchaGenerating 2s ease-in-out infinite;
+  border-color: #1890ff;
+}
+
+@keyframes captchaGenerating {
+  0% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .login-footer {
   text-align: center;
   margin-top: 24px;
@@ -110,10 +130,9 @@
   }
 }
 
-/* Cap widget styling */
+/* Cap widget styling - 隐藏模式 */
 cap-widget {
-  width: 100% !important;
-  display: block !important;
+  display: none !important;
 }
 
 /* Remember checkbox styling */

@@ -19,6 +19,7 @@
     "@ant-design/pro-list": "^2.6.9",
     "@ant-design/pro-table": "^3.21.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@cap.js/wasm": "^0.0.6",
     "@cap.js/widget": "^0.1.28",
     "antd": "^5.27.1",
     "react": "^19.1.1",
