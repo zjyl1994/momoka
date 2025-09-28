@@ -13,9 +13,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/h2non/bimg"
+	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/vars"
 )
 
@@ -57,6 +59,29 @@ func ConvImage(inputFile, outFile, acceptType string) error {
 		return err
 	}
 	return bimg.Write(outFile, newImage)
+}
+
+var asyncConvImageMutex sync.Mutex
+
+func AsyncConvImage(src, dst, acceptType string) {
+	go func() {
+		asyncConvImageMutex.Lock()
+		defer asyncConvImageMutex.Unlock()
+		if !FileExists(src) {
+			return
+		}
+		if FileExists(dst) {
+			return
+		}
+		start := time.Now()
+		err := ConvImage(src, dst, acceptType)
+		elapsed := time.Since(start).Truncate(time.Millisecond)
+		if err != nil {
+			logrus.Errorln("Failed to convert image:", err)
+		} else {
+			logrus.Infof("Converted image %s to %s in %v", filepath.Base(src), filepath.Base(dst), elapsed)
+		}
+	}()
 }
 
 // RunTickerTask 运行定时任务

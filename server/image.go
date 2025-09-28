@@ -4,10 +4,8 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
 	"github.com/zjyl1994/momoka/infra/vars"
@@ -15,7 +13,6 @@ import (
 )
 
 var getImageSf utils.SingleFlight[string]
-var imageConvSf utils.SingleFlight[string]
 
 func GetImageHandler(c *fiber.Ctx) error {
 	fileName := c.Params("filename")
@@ -66,14 +63,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 			localPath = targetPath
 		} else {
 			// 异步触发转换，本次请求仍然使用原始图片进行响应
-			go func(src, dst, acceptType string) {
-				imageConvSf.Do(src, func() (string, error) {
-					start := time.Now()
-					e := utils.ConvImage(src, dst, accept)
-					logrus.Debugf("[async:%v] conv %s -> %s", time.Since(start).Truncate(time.Millisecond), src, dst)
-					return dst, e
-				})
-			}(localPath, targetPath, accept)
+			utils.AsyncConvImage(localPath, targetPath, accept)
 		}
 	}
 	// 刷新文件时间,方便后续清理使用
