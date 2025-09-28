@@ -15,7 +15,7 @@ import (
 )
 
 var getImageSf utils.SingleFlight[string]
-var webpSf utils.SingleFlight[string]
+var imageConvSf utils.SingleFlight[string]
 
 func GetImageHandler(c *fiber.Ctx) error {
 	fileName := c.Params("filename")
@@ -58,21 +58,22 @@ func GetImageHandler(c *fiber.Ctx) error {
 	if len(localPath) == 0 {
 		return fiber.ErrNotFound
 	}
-	// 检查是否支持webp
-	if vars.CwebpBin != "" && c.Accepts("image/webp") == "image/webp" {
-		webpPath := strings.TrimSuffix(localPath, filepath.Ext(localPath)) + ".webp"
-		if !utils.FileExists(webpPath) { // 本地缓存中没有，尝试生成
-			if _, err = webpSf.Do(localPath, func() (string, error) {
-				startTime := time.Now()
-				// 转换为webp
-				e := utils.ConvWebp(localPath, webpPath)
-				logrus.Debugln("conv webp cost:", time.Since(startTime))
-				return webpPath, e
-			}); err == nil {
-				localPath = webpPath
-			}
-		} else { // 提供已有的webp
-			localPath = webpPath
+	// 检查是否支持 webp 和 avif，统一处理
+	if accept := c.Accepts("image/webp", "image/avif"); accept != "" {
+		ext := "." + strings.TrimPrefix(accept, "image/")
+		targetPath := strings.TrimSuffix(localPath, filepath.Ext(localPath)) + ext
+		if utils.FileExists(targetPath) {
+			localPath = targetPath
+		} else {
+			// 异步触发转换，本次请求仍然使用原始图片进行响应
+			go func(src, dst, acceptType string) {
+				imageConvSf.Do(src, func() (string, error) {
+					start := time.Now()
+					e := utils.ConvImage(src, dst, accept)
+					logrus.Debugf("[async:%v] conv %s -> %s", time.Since(start).Truncate(time.Millisecond), src, dst)
+					return dst, e
+				})
+			}(localPath, targetPath, accept)
 		}
 	}
 	// 刷新文件时间,方便后续清理使用

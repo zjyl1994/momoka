@@ -3,7 +3,6 @@ package startup
 import (
 	"context"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -34,10 +33,6 @@ func Startup() (err error) {
 	}
 
 	vars.SkipAuth, _ = strconv.ParseBool(os.Getenv("MOMOKA_SKIP_AUTH"))
-
-	if val, e := exec.LookPath("cwebp"); e == nil {
-		vars.CwebpBin = val
-	}
 
 	vars.S3Config = vars.S3Conf{
 		Endpoint:  os.Getenv("MOMOKA_S3_ENDPOINT"),

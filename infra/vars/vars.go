@@ -18,7 +18,6 @@ var (
 	S3Config       S3Conf
 	S3Client       *s3.Client
 	HashID         *hashids.HashID
-	CwebpBin       string
 	AutoCleanDays  int
 	AutoCleanItems int
 	BootTime       time.Time

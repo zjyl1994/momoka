@@ -11,11 +11,11 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/h2non/bimg"
 	"github.com/zjyl1994/momoka/infra/vars"
 )
 
@@ -37,24 +37,26 @@ func GetImageCachePath(imageHash, extName string) string {
 	return DataPath("cache", imageHash[0:2], imageHash[2:4], imageHash+extName)
 }
 
-// ConvWebp 将图片转换为WebP格式
-func ConvWebp(inputFile, outFile string) error {
-	ext := filepath.Ext(inputFile)
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".tiff" && ext != ".tif" {
-		return nil // 不支持的格式无需转换
+// ConvImage 将图片转换为指定格式
+func ConvImage(inputFile, outFile, acceptType string) error {
+	var format bimg.ImageType
+	switch acceptType {
+	case "image/webp":
+		format = bimg.WEBP
+	case "image/avif":
+		format = bimg.AVIF
+	default:
+		return nil
 	}
-
-	if vars.CwebpBin == "" {
-		return fmt.Errorf("cwebp not found")
-	}
-
-	// 调用cwebp命令进行转换
-	cmd := exec.Command(vars.CwebpBin, inputFile, "-o", outFile, "-quiet")
-	output, err := cmd.CombinedOutput()
+	buffer, err := bimg.Read(inputFile)
 	if err != nil {
-		return fmt.Errorf("cwebp failed: %v, output: %s", err, string(output))
+		return err
 	}
-	return nil
+	newImage, err := bimg.NewImage(buffer).Convert(format)
+	if err != nil {
+		return err
+	}
+	return bimg.Write(outFile, newImage)
 }
 
 // RunTickerTask 运行定时任务
