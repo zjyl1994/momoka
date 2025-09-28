@@ -75,18 +75,61 @@ export const validateToken = async () => {
 
 // 检查后端的认证状态
 export const checkAuthStatus = async () => {
-  // 使用缓存避免重复请求
+  // 首先检查内存缓存
   if (authStatusCache) {
     return authStatusCache;
   }
   
+  // 检查localStorage缓存
   try {
+    const cachedData = localStorage.getItem('auth_status_cache');
+    const cachedTimestamp = localStorage.getItem('auth_status_cache_timestamp');
+    
+    if (cachedData && cachedTimestamp) {
+      const now = Date.now();
+      const cacheAge = now - parseInt(cachedTimestamp);
+      const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存时间
+      
+      if (cacheAge < CACHE_DURATION) {
+        const parsedData = JSON.parse(cachedData);
+        authStatusCache = parsedData; // 同时更新内存缓存
+        console.log('[API] Using cached auth status from localStorage');
+        return parsedData;
+      } else {
+        // 缓存过期，清除localStorage中的过期数据
+        localStorage.removeItem('auth_status_cache');
+        localStorage.removeItem('auth_status_cache_timestamp');
+        console.log('[API] Auth status cache expired, cleared from localStorage');
+      }
+    }
+  } catch (error) {
+    console.error('[API] Error reading auth status cache from localStorage:', error);
+    // 清除可能损坏的缓存数据
+    localStorage.removeItem('auth_status_cache');
+    localStorage.removeItem('auth_status_cache_timestamp');
+  }
+  
+  // 从服务器获取新数据
+  try {
+    console.log('[API] Fetching fresh auth status from server');
     const response = await fetch('/api/auth-status');
     if (!response.ok) {
       throw new Error('Failed to fetch auth status');
     }
     const data = await response.json();
+    
+    // 更新内存缓存
     authStatusCache = data;
+    
+    // 保存到localStorage
+    try {
+      localStorage.setItem('auth_status_cache', JSON.stringify(data));
+      localStorage.setItem('auth_status_cache_timestamp', Date.now().toString());
+      console.log('[API] Auth status cached to localStorage');
+    } catch (storageError) {
+      console.error('[API] Failed to cache auth status to localStorage:', storageError);
+    }
+    
     return data;
   } catch (error) {
     console.error('Error checking auth status:', error);
@@ -97,3 +140,18 @@ export const checkAuthStatus = async () => {
 
 // 获取认证配置（用于其他模块）
 export const getAuthConfig = () => authStatusCache;
+
+// 清除认证状态缓存（用于强制重新获取）
+export const clearAuthStatusCache = () => {
+  // 清除内存缓存
+  authStatusCache = null;
+  
+  // 清除localStorage缓存
+  try {
+    localStorage.removeItem('auth_status_cache');
+    localStorage.removeItem('auth_status_cache_timestamp');
+    console.log('[API] Cleared auth status cache from both memory and localStorage');
+  } catch (error) {
+    console.error('[API] Error clearing auth status cache from localStorage:', error);
+  }
+};

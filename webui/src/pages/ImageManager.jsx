@@ -22,7 +22,7 @@ import {
   CopyOutlined
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
-import { useSite } from '../contexts/SiteContext';
+import { useAuthStore } from '../stores/authStore.jsx';
 
 const ImageManager = () => {
   const actionRef = useRef();
@@ -34,7 +34,7 @@ const ImageManager = () => {
   const [editForm, setEditForm] = useState({ name: '', remark: '', tags: [] });
   const [tagInputValue, setTagInputValue] = useState('');
   const [imageList, setImageList] = useState([]);
-  const { siteName, initialized } = useSite();
+  const { siteName, initialized } = useAuthStore();
 
   // Set page title
   useEffect(() => {

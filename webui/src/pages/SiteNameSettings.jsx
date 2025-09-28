@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Form, Input, Button, message, Spin, Typography } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
-import { useSite } from '../contexts/SiteContext';
+import { useAuthStore } from '../stores/authStore.jsx';
 
 const { Text } = Typography;
 
@@ -10,7 +10,7 @@ const SiteNameSettings = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { updateSiteName } = useSite();
+  const { updateSiteName } = useAuthStore();
 
   // Load settings data
   const loadSettings = async () => {

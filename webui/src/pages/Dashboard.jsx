@@ -7,7 +7,7 @@ import {
   DatabaseOutlined,
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
-import { useSite } from '../contexts/SiteContext';
+import { useAuthStore } from '../stores/authStore.jsx';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -25,7 +25,7 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);
-  const { siteName, initialized } = useSite();
+  const { siteName, initialized } = useAuthStore();
 
   // Set page title
   useEffect(() => {

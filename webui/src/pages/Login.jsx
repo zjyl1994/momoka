@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Form, Input, Button, Card, Spin, Checkbox, App, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useAuth } from '../contexts/AuthContext';
-import { useSite } from '../contexts/SiteContext';
+import { useAuthStore } from '../stores/authStore.jsx';
 import { useNavigate } from 'react-router-dom';
 import '@cap.js/widget';
 import './Login.css';
@@ -11,8 +10,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [capToken, setCapToken] = useState('');
-  const { siteName, initialized } = useSite();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, siteName, initialized } = useAuthStore();
   const navigate = useNavigate();
   const { message } = App.useApp();
 

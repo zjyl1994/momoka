@@ -8,12 +8,12 @@ import SystemInfo from './SystemInfo';
 import BackupManagement from './BackupManagement';
 import BaseUrlSettings from './BaseUrlSettings';
 import SiteNameSettings from './SiteNameSettings';
-import { useSite } from '../contexts/SiteContext';
+import { useAuthStore } from '../stores/authStore.jsx';
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'system-info';
-  const { siteName, initialized } = useSite();
+  const { siteName, initialized } = useAuthStore();
 
   // Set page title
   useEffect(() => {

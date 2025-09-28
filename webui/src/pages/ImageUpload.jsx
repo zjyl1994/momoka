@@ -3,7 +3,7 @@ import { Upload, Button, Form, Input, message, Space, Tabs, Tag, Progress } from
 import { ProCard } from '@ant-design/pro-card';
 import { InboxOutlined, UploadOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
-import { useSite } from '../contexts/SiteContext';
+import { useAuthStore } from '../stores/authStore.jsx';
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -175,7 +175,7 @@ const ImageUpload = () => {
   
   // 标签状态
   const [tags, setTags] = useState([]);
-  const { siteName, initialized } = useSite();
+  const { siteName, initialized } = useAuthStore();
 
   // 设置页面标题
   useEffect(() => {

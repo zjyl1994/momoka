@@ -2,8 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, App as AntdApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import { AuthProvider } from './contexts/AuthContext';
-import { SiteProvider } from './contexts/SiteContext';
+import { AuthStoreProvider } from './stores/authStore.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import Login from './pages/Login';
@@ -17,8 +16,7 @@ function App() {
   return (
     <ConfigProvider locale={zhCN}>
       <AntdApp>
-        <SiteProvider>
-          <AuthProvider>
+        <AuthStoreProvider>
             <Router>
             <Routes>
               {/* 登录页面 */}
@@ -68,8 +66,7 @@ function App() {
               } />
               </Routes>
             </Router>
-          </AuthProvider>
-        </SiteProvider>
+        </AuthStoreProvider>
       </AntdApp>
     </ConfigProvider>
   );

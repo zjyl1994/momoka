@@ -10,13 +10,11 @@ import {
   LogoutOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useSite } from '../contexts/SiteContext';
+import { useAuthStore } from '../stores/authStore.jsx';
 import { getAuthConfig } from '../utils/api';
 
 const AdminLayout = () => {
-  const { user, logout } = useAuth();
-  const { siteName, isDevMode, initialized } = useSite();
+  const { user, logout, siteName, isDevMode, initialized } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
