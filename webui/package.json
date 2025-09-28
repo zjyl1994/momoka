@@ -23,8 +23,6 @@
     "antd": "^5.27.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-masonry-component": "^6.3.0",
-    "react-masonry-css": "^1.0.16",
     "react-router-dom": "^7.8.2"
   },
   "devDependencies": {

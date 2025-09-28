@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Row, Col, Statistic, Progress, Table, message, Tooltip, Image } from 'antd';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { Row, Col, Statistic, Progress, message } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
 import {
   FileImageOutlined,
@@ -34,6 +34,15 @@ const Dashboard = () => {
     document.title = `仪表板 - ${siteName}`;
   }, [siteName, initialized]);
 
+  // Format bytes to human readable format - 使用useCallback优化性能
+  const formatBytes = useCallback((bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }, []);
+
   // Fetch dashboard data
   useEffect(() => {
     if (hasFetched.current) return;
@@ -60,16 +69,8 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Format bytes to human readable format
-  const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const stats = [
+  // 统计卡片数据 - 使用useMemo优化性能
+  const stats = useMemo(() => [
     {
       title: '图片总数',
       value: dashboardData.image_count,
@@ -94,7 +95,17 @@ const Dashboard = () => {
       icon: <CloudUploadOutlined style={{ color: '#eb2f96' }} />,
       color: '#eb2f96'
     }
-  ];
+  ], [dashboardData, formatBytes]);
+
+  // 负载进度条颜色计算 - 使用useCallback优化性能
+  const getLoadColor = useCallback((load) => {
+    return load > 2 ? '#ff4d4f' : load > 1 ? '#faad14' : '#52c41a';
+  }, []);
+
+  // 内存使用百分比 - 使用useMemo优化性能
+  const memoryPercent = useMemo(() => {
+    return Math.round((statData.mem.used / statData.mem.total) * 100);
+  }, [statData.mem.used, statData.mem.total]);
 
   return (
     <ProCard
@@ -117,6 +128,7 @@ const Dashboard = () => {
           </Col>
         ))}
       </Row>
+      
       {/* 系统状态 */}
       <Row gutter={[16, 16]}>
         {/* 系统负载 */}
@@ -131,7 +143,7 @@ const Dashboard = () => {
                 <Progress
                   percent={Math.min(statData.load.load1 * 25, 100)}
                   size="small"
-                  strokeColor={statData.load.load1 > 2 ? '#ff4d4f' : statData.load.load1 > 1 ? '#faad14' : '#52c41a'}
+                  strokeColor={getLoadColor(statData.load.load1)}
                   showInfo={false}
                 />
               </div>
@@ -144,7 +156,7 @@ const Dashboard = () => {
                 <Progress
                   percent={Math.min(statData.load.load5 * 25, 100)}
                   size="small"
-                  strokeColor={statData.load.load5 > 2 ? '#ff4d4f' : statData.load.load5 > 1 ? '#faad14' : '#52c41a'}
+                  strokeColor={getLoadColor(statData.load.load5)}
                   showInfo={false}
                 />
               </div>
@@ -157,13 +169,14 @@ const Dashboard = () => {
                 <Progress
                   percent={Math.min(statData.load.load15 * 25, 100)}
                   size="small"
-                  strokeColor={statData.load.load15 > 2 ? '#ff4d4f' : statData.load.load15 > 1 ? '#faad14' : '#52c41a'}
+                  strokeColor={getLoadColor(statData.load.load15)}
                   showInfo={false}
                 />
               </div>
             </div>
           </ProCard>
         </Col>
+        
         {/* 磁盘使用情况 */}
         <Col xs={24} lg={8}>
           <ProCard title="磁盘使用情况" loading={loading} style={{ height: '300px' }} headerBordered>
@@ -205,7 +218,7 @@ const Dashboard = () => {
             <div style={{ textAlign: 'center' }}>
               <Progress
                 type="circle"
-                percent={Math.round((statData.mem.used / statData.mem.total) * 100)}
+                percent={memoryPercent}
                 format={(percent) => `${percent}%`}
                 strokeColor={{
                   '0%': '#108ee9',

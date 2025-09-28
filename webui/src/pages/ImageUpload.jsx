@@ -8,8 +8,8 @@ import { useSite } from '../contexts/SiteContext';
 const { Dragger } = Upload;
 const { TextArea } = Input;
 
-// 复制按钮组件
-const CopyButton = ({ text, onCopy }) => (
+// 复制按钮组件 - 使用React.memo优化性能
+const CopyButton = React.memo(({ text, onCopy }) => (
   <Button 
     size="small" 
     icon={<CopyOutlined />}
@@ -20,10 +20,10 @@ const CopyButton = ({ text, onCopy }) => (
       onCopy?.(text);
     }}
   />
-);
+));
 
-// 结果链接组件
-const ResultLink = ({ result }) => {
+// 结果链接组件 - 使用React.memo优化性能
+const ResultLink = React.memo(({ result }) => {
   const linkTypes = [
     { key: 'url', label: '直链', value: result.url },
     { key: 'markdown', label: 'Markdown', value: `![${result.filename}](${result.url})` },
@@ -51,10 +51,10 @@ const ResultLink = ({ result }) => {
       }))}
     />
   );
-};
+});
 
-// 上传结果项组件
-const UploadResultItem = ({ result, index, isLast }) => (
+// 上传结果项组件 - 使用React.memo优化性能
+const UploadResultItem = React.memo(({ result, index, isLast }) => (
   <div style={{
     padding: '16px',
     border: `1px solid ${result.success ? '#b7eb8f' : '#ffccc7'}`,
@@ -100,24 +100,28 @@ const UploadResultItem = ({ result, index, isLast }) => (
       </div>
     )}
   </div>
-);
+));
 
-// 标签管理组件
-const TagManager = ({ tags, onTagsChange }) => {
+// 标签管理组件 - 使用React.memo优化性能
+const TagManager = React.memo(({ tags, onTagsChange }) => {
   const [inputVisible, setInputVisible] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
-  const handleClose = (removedTag) => {
+  const handleClose = useCallback((removedTag) => {
     onTagsChange(tags.filter(tag => tag !== removedTag));
-  };
+  }, [tags, onTagsChange]);
 
-  const handleInputConfirm = () => {
+  const handleInputConfirm = useCallback(() => {
     if (inputValue && !tags.includes(inputValue)) {
       onTagsChange([...tags, inputValue]);
     }
     setInputVisible(false);
     setInputValue('');
-  };
+  }, [inputValue, tags, onTagsChange]);
+
+  const showInput = useCallback(() => {
+    setInputVisible(true);
+  }, []);
 
   return (
     <div>
@@ -144,7 +148,7 @@ const TagManager = ({ tags, onTagsChange }) => {
         />
       ) : (
         <Tag
-          onClick={() => setInputVisible(true)}
+          onClick={showInput}
           style={{
             background: '#fff',
             borderStyle: 'dashed',
@@ -156,7 +160,7 @@ const TagManager = ({ tags, onTagsChange }) => {
       )}
     </div>
   );
-};
+});
 
 const ImageUpload = () => {
   const [form] = Form.useForm();
@@ -180,7 +184,7 @@ const ImageUpload = () => {
     document.title = `上传图片 - ${siteName}`;
   }, [siteName, initialized]);
 
-  // 文件验证
+  // 文件验证 - 使用useCallback优化性能
   const beforeUpload = useCallback((file) => {
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
@@ -195,13 +199,13 @@ const ImageUpload = () => {
     return false;
   }, []);
 
-  // 文件变化处理
+  // 文件变化处理 - 使用useCallback优化性能
   const handleFileChange = useCallback((info) => {
     setFileList(info.fileList);
   }, []);
 
   // 上传单个文件
-  const uploadSingleFile = async (file, values) => {
+  const uploadSingleFile = useCallback(async (file, values) => {
     const formData = new FormData();
     formData.append('file', file.originFileObj || file);
     
@@ -242,10 +246,10 @@ const ImageUpload = () => {
         success: false
       };
     }
-  };
+  }, [tags]);
 
   // 批量上传处理
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (fileList.length === 0) {
       message.warning('请先选择要上传的图片');
       return;
@@ -290,19 +294,19 @@ const ImageUpload = () => {
       console.error('表单验证失败:', error);
       setUploading(false);
     }
-  };
+  }, [fileList, form, uploadSingleFile]);
 
   // 清空所有状态
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setFileList([]);
     form.resetFields();
     setTags([]);
     setUploadResults([]);
     setUploadProgress(0);
-  };
+  }, [form]);
 
-  // Upload组件配置
-  const uploadProps = {
+  // Upload组件配置 - 使用useMemo优化性能
+  const uploadProps = React.useMemo(() => ({
     name: 'file',
     multiple: true,
     fileList,
@@ -314,7 +318,7 @@ const ImageUpload = () => {
       showRemoveIcon: true,
     },
     onDrop: (e) => console.log('Dropped files', e.dataTransfer.files),
-  };
+  }), [fileList, beforeUpload, handleFileChange]);
 
   return (
     <ProCard title="图片上传" bordered>

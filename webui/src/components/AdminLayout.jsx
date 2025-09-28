@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ProLayout } from '@ant-design/pro-layout';
-import { Avatar, Dropdown, Space, Tag } from 'antd';
+import { Dropdown, Space, Tag } from 'antd';
 import {
   DashboardOutlined,
   FileImageOutlined,
   CloudUploadOutlined,
   SettingOutlined,
   UserOutlined,
-  LogoutOutlined,
-  BellOutlined
+  LogoutOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,15 +20,10 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log('[AdminLayout] Current values:', { siteName, isDevMode, initialized, pathname: location.pathname });
-
   // 设置页面标题
   useEffect(() => {
-    console.log('[AdminLayout] useEffect triggered:', { siteName, initialized, pathname: location.pathname });
-    
     // 只有在站点信息初始化完成后才设置标题
     if (!initialized) {
-      console.log('[AdminLayout] Not initialized yet, skipping title update');
       return;
     }
     
@@ -52,7 +46,6 @@ const AdminLayout = () => {
     };
 
     const newTitle = getPageTitle();
-    console.log('[AdminLayout] Setting document.title to:', newTitle);
     document.title = newTitle;
   }, [location.pathname, siteName, initialized]);
 

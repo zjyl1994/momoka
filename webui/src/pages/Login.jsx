@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Spin, Checkbox, Alert, App } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Form, Input, Button, Card, Spin, Checkbox, App, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useSite } from '../contexts/SiteContext';
@@ -46,7 +46,13 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const onFinish = async (values) => {
+  // 清除错误信息 - 使用useCallback优化性能
+  const clearError = useCallback(() => {
+    setError('');
+  }, []);
+
+  // 表单提交处理 - 使用useCallback优化性能
+  const onFinish = useCallback(async (values) => {
     if (!capToken) {
       setError('请完成验证码验证');
       return;
@@ -67,7 +73,7 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [capToken, login, message, navigate]);
 
   return (
     <div className="login-container">
@@ -86,7 +92,7 @@ const Login = () => {
                 showIcon
                 style={{ marginBottom: '16px' }}
                 closable
-                onClose={() => setError('')}
+                onClose={clearError}
               />
             )}
 
@@ -133,8 +139,6 @@ const Login = () => {
                 </Form.Item>
               </Form.Item>
 
-
-
               <Form.Item>
                 <Button
                   type="primary"
@@ -148,7 +152,14 @@ const Login = () => {
               </Form.Item>
 
               <Form.Item>
-                <cap-widget id="cap" data-cap-api-endpoint="/api/cap/" style={{ '--cap-widget-width': "100%", '--cap-border-color': '#d9d9d9' }}></cap-widget>
+                <cap-widget 
+                  id="cap" 
+                  data-cap-api-endpoint="/api/cap/" 
+                  style={{ 
+                    '--cap-widget-width': "100%", 
+                    '--cap-border-color': '#d9d9d9' 
+                  }}
+                />
               </Form.Item>
             </Form>
 

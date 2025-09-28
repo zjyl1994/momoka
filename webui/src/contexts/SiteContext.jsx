@@ -16,8 +16,6 @@ export const SiteProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  console.log('[SiteContext] Current state:', { siteName, isDevMode, loading, initialized });
-
   // 加载站点信息
   const loadSiteInfo = async () => {
     console.log('[SiteContext] loadSiteInfo called');

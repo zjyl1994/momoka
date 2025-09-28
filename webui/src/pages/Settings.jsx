@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { Tabs } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
 import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons';
@@ -22,12 +22,13 @@ const Settings = () => {
     document.title = `系统设置 - ${siteName}`;
   }, [siteName, initialized]);
 
-  // Handle tab change
-  const handleTabChange = (key) => {
+  // Handle tab change - 使用useCallback优化性能
+  const handleTabChange = useCallback((key) => {
     setSearchParams({ tab: key });
-  };
+  }, [setSearchParams]);
 
-  const tabItems = [
+  // Tab配置 - 使用useMemo优化性能
+  const tabItems = useMemo(() => [
     {
       key: 'system-info',
       label: (
@@ -78,7 +79,7 @@ const Settings = () => {
       ),
       children: <BackupManagement />
     },
-  ];
+  ], []);
 
   return (
     <ProCard title="系统设置" bordered>
