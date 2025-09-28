@@ -19,16 +19,31 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDevMode, setIsDevMode] = useState(false);
+  const [siteName, setSiteName] = useState('Momoka 图床');
 
-  // 检查是否为开发模式
+  // 检查是否为开发模式并获取站点名称
   useEffect(() => {
-    const checkDevMode = async () => {
-      const authConfig = getAuthConfig();
-      if (authConfig && authConfig.skip_auth) {
-        setIsDevMode(true);
+    const loadSiteInfo = async () => {
+      try {
+        const response = await fetch('/api/auth-status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.skip_auth) {
+            setIsDevMode(true);
+          }
+          const currentSiteName = data.site_name || 'Momoka 图床';
+          setSiteName(currentSiteName);
+        }
+      } catch (error) {
+        console.error('Failed to load site info:', error);
+        // 如果获取失败，尝试从缓存的authConfig获取
+        const authConfig = getAuthConfig();
+        if (authConfig && authConfig.skip_auth) {
+          setIsDevMode(true);
+        }
       }
     };
-    checkDevMode();
+    loadSiteInfo();
   }, []);
 
   // 处理退出登录
@@ -75,7 +90,7 @@ const AdminLayout = () => {
     <ProLayout
       title={
         <Space>
-          <span>Momoka 图床</span>
+          <span>{siteName}</span>
           {isDevMode && (
             <Tag color="orange" style={{ fontSize: '12px' }}>
               开发模式

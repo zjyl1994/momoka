@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import { Tabs } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
-import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined } from '@ant-design/icons';
+import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import UserManagement from './UserManagement';
 import SystemInfo from './SystemInfo';
 import BackupManagement from './BackupManagement';
 import BaseUrlSettings from './BaseUrlSettings';
+import SiteNameSettings from './SiteNameSettings';
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,6 +33,16 @@ const Settings = () => {
         </span>
       ),
       children: <SystemInfo />
+    },
+    {
+      key: 'site-name-settings',
+      label: (
+        <span>
+          <EditOutlined />
+          站点名称
+        </span>
+      ),
+      children: <SiteNameSettings />
     },
     {
       key: 'base-url-settings',

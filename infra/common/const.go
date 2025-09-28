@@ -19,6 +19,7 @@ const (
 	SETTING_KEY_AUTO_BACKUP_DAY    = "auto_backup_day"
 	SETTING_KEY_SYSTEM_RAND_SECRET = "system_rand_secret"
 	SETTING_KEY_BASE_URL           = "base_url"
+	SETTING_KEY_SITE_NAME          = "site_name"
 )
 
 const (

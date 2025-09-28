@@ -23,6 +23,7 @@ var (
 	AutoCleanItems int
 	BootTime       time.Time
 	BaseURL        string
+	SiteName       string
 	CapInstance    cap.ICap
 	SkipAuth       bool
 )

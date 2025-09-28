@@ -134,6 +134,16 @@ func Startup() (err error) {
 	}
 	vars.BaseURL = strings.TrimSuffix(baseURL, "/")
 
+	// load site_name
+	siteName, err := service.SettingService.Get(common.SETTING_KEY_SITE_NAME)
+	if err != nil {
+		return err
+	}
+	if siteName == "" {
+		siteName = "Momoka 图床"
+	}
+	vars.SiteName = siteName
+
 	if vars.AutoCleanDays > 0 || vars.AutoCleanItems > 0 {
 		// 后台线程自动清理本地缓存
 		go utils.RunTickerTask(context.Background(), time.Hour, true, func(context.Context) {

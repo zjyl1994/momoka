@@ -42,6 +42,9 @@ func UpdateSettingHandler(c *fiber.Ctx) error {
 	if _, ok := req[common.SETTING_KEY_BASE_URL]; ok {
 		vars.BaseURL = req[common.SETTING_KEY_BASE_URL]
 	}
+	if _, ok := req[common.SETTING_KEY_SITE_NAME]; ok {
+		vars.SiteName = req[common.SETTING_KEY_SITE_NAME]
+	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
 

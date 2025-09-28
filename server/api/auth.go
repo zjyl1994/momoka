@@ -126,6 +126,7 @@ func RedeemChallenge(c *fiber.Ctx) error {
 
 func AuthStatusHandler(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
-		"skip_auth": vars.SkipAuth,
+		"skip_auth":  vars.SkipAuth,
+		"site_name":  vars.SiteName,
 	})
 }

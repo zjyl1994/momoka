@@ -10,13 +10,31 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [capToken, setCapToken] = useState('');
+  const [siteName, setSiteName] = useState('Momoka 图床');
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { message } = App.useApp();
 
-  // Set page title
+  // Set page title and load site name
   useEffect(() => {
-    document.title = '登录 - Momoka 图床';
+    const loadSiteInfo = async () => {
+      try {
+        const response = await fetch('/api/auth-status');
+        if (response.ok) {
+          const data = await response.json();
+          const currentSiteName = data.site_name || 'Momoka 图床';
+          setSiteName(currentSiteName);
+          document.title = `登录 - ${currentSiteName}`;
+        } else {
+          document.title = '登录 - Momoka 图床';
+        }
+      } catch (error) {
+        console.error('Failed to load site info:', error);
+        document.title = '登录 - Momoka 图床';
+      }
+    };
+
+    loadSiteInfo();
 
     // Add cap widget event listener
     const capWidget = document.getElementById('cap');
@@ -69,7 +87,7 @@ const Login = () => {
         <div className="login-form-wrapper">
           <Card className="login-card">
             <div className="login-header">
-              <h1>Momoka 图床</h1>
+              <h1>{siteName}</h1>
               <p>请登录您的账户</p>
             </div>
 
