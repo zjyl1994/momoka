@@ -46,6 +46,17 @@ func GetImageHandler(c *fiber.Ctx) error {
 				return "", err
 			}
 		}
+		// 检查是否支持 webp 和 avif，统一处理
+		if accept := c.Accepts("image/webp", "image/avif"); accept != "" && imgObj.ContentType != accept {
+			targetPath := strings.TrimSuffix(imgObj.LocalPath, filepath.Ext(imgObj.LocalPath)) + "." + strings.TrimPrefix(accept, "image/")
+			
+			if utils.FileExists(targetPath) {
+				imgObj.LocalPath = targetPath
+			} else {
+				// 异步触发转换，本次请求仍然使用原始图片进行响应
+				utils.AsyncConvImage(imgObj.LocalPath, targetPath, accept)
+			}
+		}
 		return imgObj.LocalPath, nil
 	})
 
@@ -54,17 +65,6 @@ func GetImageHandler(c *fiber.Ctx) error {
 	}
 	if len(localPath) == 0 {
 		return fiber.ErrNotFound
-	}
-	// 检查是否支持 webp 和 avif，统一处理
-	if accept := c.Accepts("image/webp", "image/avif"); accept != "" {
-		ext := "." + strings.TrimPrefix(accept, "image/")
-		targetPath := strings.TrimSuffix(localPath, filepath.Ext(localPath)) + ext
-		if utils.FileExists(targetPath) {
-			localPath = targetPath
-		} else {
-			// 异步触发转换，本次请求仍然使用原始图片进行响应
-			utils.AsyncConvImage(localPath, targetPath, accept)
-		}
 	}
 	// 刷新文件时间,方便后续清理使用
 	err = utils.TouchFile(localPath)

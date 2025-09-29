@@ -64,6 +64,9 @@ func ConvImage(inputFile, outFile, acceptType string) error {
 var asyncConvImageMutex sync.Mutex
 
 func AsyncConvImage(src, dst, acceptType string) {
+	if filepath.Ext(src) == filepath.Ext(dst) {
+		return
+	}
 	go func() {
 		asyncConvImageMutex.Lock()
 		defer asyncConvImageMutex.Unlock()
