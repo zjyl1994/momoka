@@ -2,6 +2,7 @@ package utils
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/h2non/bimg"
@@ -58,10 +59,11 @@ func (ic *imageConverter) run() {
 		start := time.Now()
 		err := ic.convert(task.inputFile, task.outFile)
 		elapsed := time.Since(start)
+		imgHash := strings.TrimSuffix(filepath.Base(task.inputFile), filepath.Ext(task.inputFile))
 		if err != nil {
-			logrus.Errorf("convert image %s to %s failed: %v", filepath.Base(task.inputFile), filepath.Base(task.outFile), err)
+			logrus.Errorf("convert %s image %s to %s failed: %v", imgHash, filepath.Ext(task.inputFile), filepath.Ext(task.outFile), err)
 		} else {
-			logrus.Infof("convert image %s to %s success, cost %v", filepath.Base(task.inputFile), filepath.Base(task.outFile), elapsed)
+			logrus.Infof("convert %s image %s to %s success, cost %v", imgHash, filepath.Ext(task.inputFile), filepath.Ext(task.outFile), elapsed)
 		}
 	}
 }

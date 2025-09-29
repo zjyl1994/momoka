@@ -61,6 +61,21 @@ func (s *imageService) Add(db *gorm.DB, image *common.Image) error {
 }
 
 func (s *imageService) Get(db *gorm.DB, id int64) (*common.Image, error) {
+	image, err := s.PureGet(db, id)
+	if err != nil {
+		return nil, err
+	}
+	if image != nil {
+		var tags []string
+		if err := db.Model(&common.ImageTags{}).Where("image_id = ?", id).Pluck("tag_name", &tags).Error; err != nil {
+			return nil, err
+		}
+		image.Tags = lo.Uniq(tags)
+	}
+	return image, nil
+}
+
+func (s *imageService) PureGet(db *gorm.DB, id int64) (*common.Image, error) {
 	var image common.Image
 	if err := db.First(&image, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -68,11 +83,6 @@ func (s *imageService) Get(db *gorm.DB, id int64) (*common.Image, error) {
 		}
 		return nil, err
 	}
-	var tags []string
-	if err := db.Model(&common.ImageTags{}).Where("image_id = ?", id).Pluck("tag_name", &tags).Error; err != nil {
-		return nil, err
-	}
-	image.Tags = lo.Uniq(tags)
 	s.FillModel(&image)
 	return &image, nil
 }
@@ -125,15 +135,37 @@ func (s *imageService) Search(db *gorm.DB, keyword string, page, pageSize int, i
 		return nil, 0, err
 	}
 
-	// Load tags for each image
-	for _, image := range images {
-		var tags []string
-		if err := db.Model(&common.ImageTags{}).Where("image_id = ?", image.ID).Pluck("tag_name", &tags).Error; err != nil {
+	// Batch load tags for all images
+	if len(images) > 0 {
+		// Collect all image IDs using lo.Map
+		imageIDs := lo.Map(images, func(image *common.Image, _ int) int64 {
+			return image.ID
+		})
+
+		// Batch query all tags for these images
+		var imageTags []common.ImageTags
+		if err := db.Where("image_id IN ?", imageIDs).Find(&imageTags).Error; err != nil {
 			return nil, 0, err
 		}
-		image.Tags = lo.Uniq(tags)
 
-		s.FillModel(image)
+		// Group tags by image ID using lo.GroupBy
+		tagsMap := lo.GroupBy(imageTags, func(imageTag common.ImageTags) int64 {
+			return imageTag.ImageID
+		})
+
+		// Assign tags to each image
+		for _, image := range images {
+			if tagRecords, exists := tagsMap[image.ID]; exists {
+				// Extract tag names using lo.Map
+				tagNames := lo.Map(tagRecords, func(tag common.ImageTags, _ int) string {
+					return tag.TagName
+				})
+				image.Tags = lo.Uniq(tagNames)
+			} else {
+				image.Tags = []string{}
+			}
+			s.FillModel(image)
+		}
 	}
 
 	return images, total, nil
