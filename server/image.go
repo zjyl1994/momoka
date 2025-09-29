@@ -66,11 +66,12 @@ func GetImageHandler(c *fiber.Ctx) error {
 	if len(localPath) == 0 {
 		return fiber.ErrNotFound
 	}
-	// 刷新文件时间,方便后续清理使用
+	// 刷新文件访问时间,方便后续清理使用
 	err = utils.TouchFile(localPath)
 	if err != nil {
 		return err
 	}
+	// 设置客户端缓存控制
+	c.Set("Cache-Control", "public, max-age=2592000") // 公开缓存30天
 	return c.SendFile(localPath)
-
 }
