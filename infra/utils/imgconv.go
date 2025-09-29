@@ -70,12 +70,16 @@ func (ic *imageConverter) convert(inputFile, outFile string) error {
 	if filepath.Ext(inputFile) == filepath.Ext(outFile) {
 		return nil
 	}
-	var format bimg.ImageType
+	convertOpts := bimg.Options{
+		Quality:       90,
+		StripMetadata: true,
+		Speed:         7,
+	}
 	switch filepath.Ext(outFile) {
 	case ".webp":
-		format = bimg.WEBP
+		convertOpts.Type = bimg.WEBP
 	case ".avif":
-		format = bimg.AVIF
+		convertOpts.Type = bimg.AVIF
 	default:
 		return nil
 	}
@@ -83,7 +87,7 @@ func (ic *imageConverter) convert(inputFile, outFile string) error {
 	if err != nil {
 		return err
 	}
-	newImage, err := bimg.NewImage(buffer).Convert(format)
+	newImage, err := bimg.NewImage(buffer).Process(convertOpts)
 	if err != nil {
 		return err
 	}
