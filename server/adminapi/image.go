@@ -135,7 +135,9 @@ func ImageUploadHandler(c *fiber.Ctx) error {
 	if image.URL != "" {
 		image.URL = baseUrl + image.URL
 	}
-
+	// Async convert to avif/webp
+	vars.ImageConverter.Convert(image.LocalPath, utils.ChangeExtName(image.LocalPath, "avif"))
+	vars.ImageConverter.Convert(image.LocalPath, utils.ChangeExtName(image.LocalPath, "webp"))
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"image": image,
 	})

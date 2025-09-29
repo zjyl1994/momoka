@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/zjyl1994/momoka/infra/common"
@@ -127,4 +128,18 @@ func SaveMultipartFile(fileHeader *multipart.FileHeader, path string) error {
 	}
 
 	return nil
+}
+
+func ChangeExtName(path string, ext string) string {
+	if ext == "" {
+		return path
+	}
+	if ext[0] != '.' {
+		ext = "." + ext
+	}
+	extName := filepath.Ext(path)
+	if extName == ext {
+		return path
+	}
+	return strings.TrimSuffix(path, extName) + ext
 }
