@@ -8,7 +8,7 @@ const initialState = {
   user: null,
   
   // 站点配置
-  siteName: 'Momoka 图床',
+  siteName: localStorage.getItem('siteName') || 'Momoka 图床',
   isDevMode: false,
   skipAuth: false,
   
@@ -124,6 +124,10 @@ export const AuthStoreProvider = ({ children }) => {
 
     setSiteConfig: (config) => {
       dispatch({ type: ActionTypes.SET_SITE_CONFIG, payload: config });
+      // 将站点配置保存到localStorage
+      if (config.siteName) {
+        localStorage.setItem('siteName', config.siteName);
+      }
     },
 
     setError: (error) => {
@@ -267,33 +271,7 @@ export const AuthStoreProvider = ({ children }) => {
       }
     },
 
-    // 更新站点名称
-    updateSiteName: async (newSiteName) => {
-      try {
-        const response = await fetch('/api/admin/site-name', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ site_name: newSiteName })
-        });
 
-        if (response.ok) {
-          actions.setSiteConfig({
-            siteName: newSiteName,
-            isDevMode: state.isDevMode
-          });
-          return { success: true };
-        } else {
-          const errorData = await response.json();
-          return { success: false, message: errorData.error || '更新失败' };
-        }
-      } catch (error) {
-        console.error('[AuthStore] Update site name error:', error);
-        return { success: false, message: '网络错误，请重试' };
-      }
-    }
   };
 
   // 处理401错误

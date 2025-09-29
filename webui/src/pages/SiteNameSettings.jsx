@@ -10,7 +10,7 @@ const SiteNameSettings = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { updateSiteName } = useAuthStore();
+  const { refreshSiteInfo } = useAuthStore();
 
   // Load settings data
   const loadSettings = async () => {
@@ -53,8 +53,8 @@ const SiteNameSettings = () => {
 
       if (response.ok) {
         message.success('站点名称设置保存成功');
-        // 更新全局站点名称
-        updateSiteName(updateData.site_name);
+        // 刷新站点信息以更新缓存
+        await refreshSiteInfo();
       } else {
         message.error('设置保存失败');
       }
