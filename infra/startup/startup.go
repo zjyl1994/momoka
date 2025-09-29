@@ -59,6 +59,7 @@ func Startup() (err error) {
 	}
 
 	vars.CapInstance = cap.NewCap(utils.NewFreeCacheStorage(100 * 1024))
+	vars.ImageConverter = utils.NewImageConverter()
 
 	vars.DataPath = os.Getenv("MOMOKA_DATA_PATH")
 	err = os.MkdirAll(vars.DataPath, 0755)

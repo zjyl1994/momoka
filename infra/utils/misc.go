@@ -13,11 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/h2non/bimg"
-	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/vars"
 )
 
@@ -37,54 +34,6 @@ func DataPath(paths ...string) string {
 
 func GetImageCachePath(imageHash, extName string) string {
 	return DataPath("cache", imageHash[0:2], imageHash[2:4], imageHash+extName)
-}
-
-// ConvImage 将图片转换为指定格式
-func ConvImage(inputFile, outFile, acceptType string) error {
-	var format bimg.ImageType
-	switch acceptType {
-	case "image/webp":
-		format = bimg.WEBP
-	case "image/avif":
-		format = bimg.AVIF
-	default:
-		return nil
-	}
-	buffer, err := bimg.Read(inputFile)
-	if err != nil {
-		return err
-	}
-	newImage, err := bimg.NewImage(buffer).Convert(format)
-	if err != nil {
-		return err
-	}
-	return bimg.Write(outFile, newImage)
-}
-
-var asyncConvImageMutex sync.Mutex
-
-func AsyncConvImage(src, dst, acceptType string) {
-	if filepath.Ext(src) == filepath.Ext(dst) {
-		return
-	}
-	go func() {
-		asyncConvImageMutex.Lock()
-		defer asyncConvImageMutex.Unlock()
-		if !FileExists(src) {
-			return
-		}
-		if FileExists(dst) {
-			return
-		}
-		start := time.Now()
-		err := ConvImage(src, dst, acceptType)
-		elapsed := time.Since(start).Truncate(time.Millisecond)
-		if err != nil {
-			logrus.Errorln("Failed to convert image:", err)
-		} else {
-			logrus.Infof("Converted image %s to %s in %v", filepath.Base(src), filepath.Base(dst), elapsed)
-		}
-	}()
 }
 
 // RunTickerTask 运行定时任务

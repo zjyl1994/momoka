@@ -49,12 +49,12 @@ func GetImageHandler(c *fiber.Ctx) error {
 		// 检查是否支持 webp 和 avif，统一处理
 		if accept := c.Accepts("image/webp", "image/avif"); accept != "" && imgObj.ContentType != accept {
 			targetPath := strings.TrimSuffix(imgObj.LocalPath, filepath.Ext(imgObj.LocalPath)) + "." + strings.TrimPrefix(accept, "image/")
-			
+
 			if utils.FileExists(targetPath) {
 				imgObj.LocalPath = targetPath
 			} else {
 				// 异步触发转换，本次请求仍然使用原始图片进行响应
-				utils.AsyncConvImage(imgObj.LocalPath, targetPath, accept)
+				vars.ImageConverter.Convert(imgObj.LocalPath, targetPath)
 			}
 		}
 		return imgObj.LocalPath, nil

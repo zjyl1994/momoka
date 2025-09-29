@@ -25,6 +25,7 @@ var (
 	SiteName       string
 	CapInstance    cap.ICap
 	SkipAuth       bool
+	ImageConverter ImageConverterIFace
 )
 
 type S3Conf struct {
@@ -34,4 +35,8 @@ type S3Conf struct {
 	SecretKey string
 	Bucket    string
 	Prefix    string
+}
+
+type ImageConverterIFace interface {
+	Convert(inputFile, outFile string)
 }
