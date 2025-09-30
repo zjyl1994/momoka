@@ -48,15 +48,6 @@ func Startup() (err error) {
 	}
 	vars.S3Debug, _ = strconv.ParseBool(os.Getenv("MOMOKA_S3_DEBUG"))
 
-	if val, _ := strconv.ParseBool(os.Getenv("MOMOKA_DISABLE_AUTO_AVIF")); !val {
-		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF)
-		logrus.Infoln("Enable auto convert avif")
-	}
-	if val, _ := strconv.ParseBool(os.Getenv("MOMOKA_DISABLE_AUTO_WEBP")); !val {
-		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_WEBP)
-		logrus.Infoln("Enable auto convert webp")
-	}
-
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")
 
 	vars.AutoCleanDays, err = strconv.Atoi(utils.COALESCE(os.Getenv("MOMOKA_AUTO_CLEAN_DAYS"), "7"))
@@ -149,6 +140,33 @@ func Startup() (err error) {
 		siteName = "Momoka 图床"
 	}
 	vars.SiteName = siteName
+
+	// load auto conversion settings
+	// 初始化自动转换设置，默认启用
+	autoConvWebp, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_AUTO_CONV_WEBP, service.StringForNotExisting("true"))
+	if err != nil {
+		return err
+	}
+	if firstCreate {
+		logrus.Infoln("Create auto convert webp setting:", autoConvWebp)
+	}
+
+	autoConvAvif, firstCreate, err := service.SettingService.SetIfNotExists(common.SETTING_KEY_AUTO_CONV_AVIF, service.StringForNotExisting("true"))
+	if err != nil {
+		return err
+	}
+	if firstCreate {
+		logrus.Infoln("Create auto convert avif setting:", autoConvAvif)
+	}
+
+	// 根据设置启用自动转换格式
+	if val, _ := strconv.ParseBool(autoConvWebp); val {
+		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_WEBP)
+	}
+	if val, _ := strconv.ParseBool(autoConvAvif); val {
+		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF)
+	}
+	logrus.Infoln("Auto convert format: ", vars.AutoConvFormat)
 
 	if vars.AutoCleanDays > 0 || vars.AutoCleanItems > 0 {
 		// 后台线程自动清理本地缓存

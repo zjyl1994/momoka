@@ -20,6 +20,8 @@ const (
 	SETTING_KEY_SYSTEM_RAND_SECRET = "system_rand_secret"
 	SETTING_KEY_BASE_URL           = "base_url"
 	SETTING_KEY_SITE_NAME          = "site_name"
+	SETTING_KEY_AUTO_CONV_WEBP     = "auto_conv_webp"
+	SETTING_KEY_AUTO_CONV_AVIF     = "auto_conv_avif"
 )
 
 const (

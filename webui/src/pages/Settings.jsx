@@ -1,13 +1,14 @@
 import React, { useEffect, useCallback, useMemo } from 'react';
 import { Tabs } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
-import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined, EditOutlined } from '@ant-design/icons';
+import { UserOutlined, InfoCircleOutlined, CloudServerOutlined, LinkOutlined, EditOutlined, PictureOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import UserManagement from './UserManagement';
 import SystemInfo from './SystemInfo';
 import BackupManagement from './BackupManagement';
 import BaseUrlSettings from './BaseUrlSettings';
 import SiteNameSettings from './SiteNameSettings';
+import ImageConversionSettings from './ImageConversionSettings';
 import { useAuthStore } from '../stores/authStore.jsx';
 
 const Settings = () => {
@@ -58,6 +59,16 @@ const Settings = () => {
         </span>
       ),
       children: <BaseUrlSettings />
+    },
+    {
+      key: 'image-conversion-settings',
+      label: (
+        <span>
+          <PictureOutlined />
+          图像转换
+        </span>
+      ),
+      children: <ImageConversionSettings />
     },
     {
       key: 'user-management',

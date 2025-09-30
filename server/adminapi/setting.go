@@ -2,9 +2,11 @@ package adminapi
 
 import (
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/vars"
 	"github.com/zjyl1994/momoka/service"
@@ -45,6 +47,19 @@ func UpdateSettingHandler(c *fiber.Ctx) error {
 	if _, ok := req[common.SETTING_KEY_SITE_NAME]; ok {
 		vars.SiteName = req[common.SETTING_KEY_SITE_NAME]
 	}
+
+	// 动态更新自动转换格式设置
+	needUpdateAutoConv := false
+	if _, hasWebp := req[common.SETTING_KEY_AUTO_CONV_WEBP]; hasWebp {
+		needUpdateAutoConv = true
+	}
+	if _, hasAvif := req[common.SETTING_KEY_AUTO_CONV_AVIF]; hasAvif {
+		needUpdateAutoConv = true
+	}
+	if needUpdateAutoConv {
+		updateAutoConvFormat()
+	}
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -65,4 +80,32 @@ func GetReadonlySettingHandler(c *fiber.Ctx) error {
 		"boot_time":        vars.BootTime.Unix(),
 		"boot_since":       int64(time.Since(vars.BootTime).Seconds()),
 	})
+}
+
+// updateAutoConvFormat 动态更新自动转换格式配置
+func updateAutoConvFormat() {
+	// 清空当前配置
+	vars.AutoConvFormat = vars.AutoConvFormat[:0]
+
+	// 从数据库重新读取设置
+	autoConvWebp, err := service.SettingService.Get(common.SETTING_KEY_AUTO_CONV_WEBP)
+	if err != nil {
+		logrus.Errorf("Failed to get webp setting: %v", err)
+		return
+	}
+
+	autoConvAvif, err := service.SettingService.Get(common.SETTING_KEY_AUTO_CONV_AVIF)
+	if err != nil {
+		logrus.Errorf("Failed to get avif setting: %v", err)
+		return
+	}
+
+	// 根据设置启用自动转换格式
+	if val, _ := strconv.ParseBool(autoConvWebp); val {
+		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_WEBP)
+	}
+	if val, _ := strconv.ParseBool(autoConvAvif); val {
+		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF)
+	}
+	logrus.Infoln("Update auto convert format: ", vars.AutoConvFormat)
 }
