@@ -7,7 +7,11 @@ import {
   CloudUploadOutlined,
   SettingOutlined,
   UserOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  InfoCircleOutlined,
+  PictureOutlined,
+  SafetyOutlined,
+  DatabaseOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore.jsx';
@@ -17,6 +21,7 @@ const AdminLayout = () => {
   const { user, logout, siteName, isDevMode, initialized } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [openKeys, setOpenKeys] = useState(['/admin/settings']);
 
   // 设置页面标题
   useEffect(() => {
@@ -68,22 +73,58 @@ const AdminLayout = () => {
     {
       path: '/admin',
       name: '仪表板',
+      key: '/admin',
       icon: <DashboardOutlined />
     },
     {
       path: '/admin/images-upload',
       name: '上传图片',
+      key: '/admin/images-upload',
       icon: <CloudUploadOutlined />
     },
     {
       path: '/admin/images',
       name: '图片管理',
+      key: '/admin/images',
       icon: <FileImageOutlined />
     },
     {
       path: '/admin/settings',
       name: '系统设置',
-      icon: <SettingOutlined />
+      key: '/admin/settings',
+      icon: <SettingOutlined />,
+      children: [
+        {
+          path: '/admin/settings/basic-info',
+          name: '基础信息',
+          key: '/admin/settings/basic-info',
+          icon: <SettingOutlined />
+        },
+        {
+          path: '/admin/settings/system-info',
+          name: '系统信息',
+          key: '/admin/settings/system-info',
+          icon: <InfoCircleOutlined />
+        },
+        {
+          path: '/admin/settings/feature-settings',
+          name: '功能设置',
+          key: '/admin/settings/feature-settings',
+          icon: <PictureOutlined />
+        },
+        {
+          path: '/admin/settings/security-settings',
+          name: '安全管理',
+          key: '/admin/settings/security-settings',
+          icon: <SafetyOutlined />
+        },
+        {
+          path: '/admin/settings/data-management',
+          name: '数据管理',
+          key: '/admin/settings/data-management',
+          icon: <DatabaseOutlined />
+        }
+      ]
     }
   ];
 
@@ -140,7 +181,9 @@ const AdminLayout = () => {
         }
       }}
       menuProps={{
-        selectedKeys: [location.pathname]
+        selectedKeys: [location.pathname],
+        openKeys: openKeys,
+        onOpenChange: setOpenKeys
       }}
     >
       <Outlet />

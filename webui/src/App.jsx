@@ -9,7 +9,11 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ImageUpload from './pages/ImageUpload';
 import ImageManager from './pages/ImageManager';
-import Settings from './pages/Settings';
+import BasicInfoPage from './pages/settings/BasicInfoPage';
+import SystemInfoPage from './pages/settings/SystemInfoPage';
+import FeatureSettingsPage from './pages/settings/FeatureSettingsPage';
+import SecuritySettingsPage from './pages/settings/SecuritySettingsPage';
+import DataManagementPage from './pages/settings/DataManagementPage';
 import './App.css';
 
 function App() {
@@ -44,7 +48,13 @@ function App() {
                   </div>
                 } />
 
-                <Route path="settings" element={<Settings />} />
+                {/* 设置页面路由 */}
+                <Route path="settings" element={<Navigate to="basic-info" replace />} />
+                <Route path="settings/basic-info" element={<BasicInfoPage />} />
+                <Route path="settings/system-info" element={<SystemInfoPage />} />
+                <Route path="settings/feature-settings" element={<FeatureSettingsPage />} />
+                <Route path="settings/security-settings" element={<SecuritySettingsPage />} />
+                <Route path="settings/data-management" element={<DataManagementPage />} />
               </Route>
 
               {/* 根路径重定向到管理后台 */}

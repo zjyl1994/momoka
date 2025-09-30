@@ -6,14 +6,13 @@ import { useSearchParams } from 'react-router-dom';
 import UserManagement from './UserManagement';
 import SystemInfo from './SystemInfo';
 import BackupManagement from './BackupManagement';
-import BaseUrlSettings from './BaseUrlSettings';
-import SiteNameSettings from './SiteNameSettings';
+import SiteBasicSettings from './SiteBasicSettings';
 import ImageConversionSettings from './ImageConversionSettings';
 import { useAuthStore } from '../stores/authStore.jsx';
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'basic-settings';
+  const activeTab = searchParams.get('tab') || 'basic-info';
   const { siteName, initialized } = useAuthStore();
 
   // Set page title
@@ -31,15 +30,15 @@ const Settings = () => {
   // Tab配置 - 使用useMemo优化性能
   const tabItems = useMemo(() => [
     {
-      key: 'basic-settings',
-      icon: <SettingOutlined />,
-      label: '基础设置',
+      key: 'system-info',
+      icon: <InfoCircleOutlined />,
+      label: '系统信息',
       children: (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          padding: '0 4px' // 移动端边距优化
+          padding: '0 4px'
         }}>
           <Card
             title="系统信息"
@@ -51,25 +50,29 @@ const Settings = () => {
           >
             <SystemInfo />
           </Card>
+        </div>
+      ),
+    },
+    {
+      key: 'basic-info',
+      icon: <SettingOutlined />,
+      label: '基础信息',
+      children: (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          padding: '0 4px' // 移动端边距优化
+        }}>
           <Card
-            title="站点配置"
+            title="站点基础配置"
             size="small"
             style={{
               boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
               border: '1px solid #f0f0f0'
             }}
           >
-            <SiteNameSettings />
-          </Card>
-          <Card
-            title="基础URL配置"
-            size="small"
-            style={{
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-              border: '1px solid #f0f0f0'
-            }}
-          >
-            <BaseUrlSettings />
+            <SiteBasicSettings />
           </Card>
         </div>
       ),
