@@ -46,6 +46,7 @@ func Startup() (err error) {
 	if err != nil {
 		return err
 	}
+	vars.S3Debug, _ = strconv.ParseBool(os.Getenv("MOMOKA_S3_DEBUG"))
 
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")
 

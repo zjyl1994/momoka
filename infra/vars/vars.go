@@ -17,6 +17,7 @@ var (
 	Database       *gorm.DB
 	S3Config       S3Conf
 	S3Client       *s3.Client
+	S3Debug        bool
 	HashID         *hashids.HashID
 	AutoCleanDays  int
 	AutoCleanItems int
