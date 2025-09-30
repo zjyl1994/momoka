@@ -222,14 +222,25 @@ const BackupManagement = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <div><InfoCircleOutlined /> 此处只能备份元数据信息到S3，包括但不限于图片信息/文件夹结构/系统设置等。图片本身的安全性依赖S3存储桶。</div>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+        <div style={{ 
+          flex: 1, 
+          lineHeight: '1.5',
+          color: 'rgba(0, 0, 0, 0.65)',
+          fontSize: '14px',
+          wordBreak: 'break-word',
+          maxWidth: 'calc(100% - 120px)' // 为按钮预留空间
+        }}>
+          <InfoCircleOutlined style={{ marginRight: '8px', color: '#1890ff' }} /> 
+          此处只能备份元数据信息到S3，包括但不限于图片信息/文件夹结构/系统设置等。图片本身的安全性依赖S3存储桶。
+        </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => setCreateModalVisible(true)}
           loading={creating}
           disabled={restoringBackup !== null || deletingBackup !== null}
+          style={{ flexShrink: 0 }} // 防止按钮被压缩
         >
           创建备份
         </Button>

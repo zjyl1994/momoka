@@ -107,5 +107,5 @@ func updateAutoConvFormat() {
 	if val, _ := strconv.ParseBool(autoConvAvif); val {
 		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF)
 	}
-	logrus.Infoln("Update auto convert format: ", vars.AutoConvFormat)
+	logrus.Debugln("Update auto convert format: ", vars.AutoConvFormat)
 }

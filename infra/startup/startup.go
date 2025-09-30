@@ -166,7 +166,7 @@ func Startup() (err error) {
 	if val, _ := strconv.ParseBool(autoConvAvif); val {
 		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF)
 	}
-	logrus.Infoln("Auto convert format: ", vars.AutoConvFormat)
+	logrus.Debugln("Auto convert format: ", vars.AutoConvFormat)
 
 	if vars.AutoCleanDays > 0 || vars.AutoCleanItems > 0 {
 		// 后台线程自动清理本地缓存
