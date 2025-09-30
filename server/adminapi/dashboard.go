@@ -41,6 +41,8 @@ func DashboardDataHandler(c *fiber.Ctx) error {
 			"image_size":  imageSize,
 			"cache_count": fileCount,
 			"cache_size":  totalSize,
+			"click":       vars.TotalImageClick.Load(),
+			"bandwidth":   vars.TotalImageBandwidth.Load(),
 		},
 		"stat": fiber.Map{
 			"load": fiber.Map{

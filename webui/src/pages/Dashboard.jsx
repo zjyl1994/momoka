@@ -1,20 +1,25 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Row, Col, Statistic, Progress, message } from 'antd';
+import { Row, Col, Statistic, Progress, App } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
 import {
   FileImageOutlined,
   CloudUploadOutlined,
   DatabaseOutlined,
+  EyeOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 import { useAuthStore } from '../stores/authStore.jsx';
 
 const Dashboard = () => {
+  const { message } = App.useApp();
   const [dashboardData, setDashboardData] = useState({
     image_count: 0,
     image_size: 0,
     cache_count: 0,
-    cache_size: 0
+    cache_size: 0,
+    click: 0,
+    bandwidth: 0
   });
   const [statData, setStatData] = useState({
     load: { load1: 0, load5: 0, load15: 0 },
@@ -67,7 +72,7 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [message]);
 
   // 统计卡片数据 - 使用useMemo优化性能
   const stats = useMemo(() => [
@@ -94,6 +99,18 @@ const Dashboard = () => {
       value: formatBytes(dashboardData.cache_size),
       icon: <CloudUploadOutlined style={{ color: '#eb2f96' }} />,
       color: '#eb2f96'
+    },
+    {
+      title: '总点击数',
+      value: dashboardData.click.toLocaleString(),
+      icon: <EyeOutlined style={{ color: '#fa8c16' }} />,
+      color: '#fa8c16'
+    },
+    {
+      title: '总流量',
+      value: formatBytes(dashboardData.bandwidth),
+      icon: <GlobalOutlined style={{ color: '#13c2c2' }} />,
+      color: '#13c2c2'
     }
   ], [dashboardData, formatBytes]);
 
@@ -116,7 +133,7 @@ const Dashboard = () => {
       {/* 统计卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         {stats.map((stat, index) => (
-          <Col xs={24} sm={12} lg={6} key={index}>
+          <Col xs={24} sm={12} md={8} lg={6} xl={4} key={index}>
             <ProCard loading={loading} hoverable>
               <Statistic
                 title={stat.title}

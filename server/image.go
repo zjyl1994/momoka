@@ -71,6 +71,13 @@ func GetImageHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	// 记录点击次数和带宽
+	fileSize, err := utils.GetFileSize(localPath)
+	if err != nil {
+		return err
+	}
+	vars.TotalImageClick.Add(1)
+	vars.TotalImageBandwidth.Add(fileSize)
 	// 设置客户端缓存控制
 	c.Set("Cache-Control", "public, max-age=2592000") // 公开缓存30天
 	return c.SendFile(localPath)

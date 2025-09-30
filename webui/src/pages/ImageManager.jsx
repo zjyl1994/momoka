@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Button, 
-  Space, 
-  Popconfirm, 
-  message, 
-  Modal, 
-  Form, 
-  Input, 
-  Select, 
-  Tag, 
+import {
+  Button,
+  Space,
+  Popconfirm,
+  message,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Tag,
   Tooltip,
   Image
 } from 'antd';
 import { ProTable } from '@ant-design/pro-table';
 import { ProCard } from '@ant-design/pro-card';
-import { 
-  DeleteOutlined, 
-  EditOutlined, 
-  EyeOutlined, 
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
   TagsOutlined,
   CopyOutlined
 } from '@ant-design/icons';
@@ -67,7 +67,7 @@ const ImageManager = () => {
       }
 
       const response = await authFetch(`/admin-api/image?${queryParams}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         const images = data.images || [];
@@ -170,10 +170,10 @@ const ImageManager = () => {
   // Handle edit
   const handleEdit = (image) => {
     setEditingImage(image);
-    
+
     // 确保 tags 是数组类型
     const tagsArray = Array.isArray(image.tags) ? image.tags : [];
-    
+
     setEditForm({
       name: image.name || '',
       remark: image.remark || '',
@@ -266,7 +266,7 @@ const ImageManager = () => {
       hideInSearch: false,
       renderFormItem: (item, { type, defaultRender, formItemProps, fieldProps, ...rest }, form) => {
         return (
-          <Input 
+          <Input
             placeholder="搜索图片名称或备注"
             {...fieldProps}
             onChange={(e) => {
@@ -325,11 +325,11 @@ const ImageManager = () => {
       width: 120,
       hideInSearch: true,
       render: (url, record) => (
-        <div style={{ 
-          width: '80px', 
-          height: '80px', 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          width: '80px',
+          height: '80px',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
           background: '#f5f5f5',
           borderRadius: '4px',
@@ -377,21 +377,21 @@ const ImageManager = () => {
       render: (tags) => {
         // 确保 tags 是数组类型
         const tagsArray = Array.isArray(tags) ? tags : [];
-        
+
         return (
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
             gap: '4px',
             maxHeight: '120px',
             overflowY: 'auto'
           }}>
             {tagsArray.length > 0 ? (
               tagsArray.map((tag, index) => (
-                <Tag 
-                  key={index} 
+                <Tag
+                  key={index}
                   size="small"
-                  style={{ 
+                  style={{
                     margin: 0,
                     alignSelf: 'flex-start'
                   }}
@@ -496,10 +496,10 @@ const ImageManager = () => {
             rowKey="id"
             scroll={{ x: 1000 }}
             pagination={{
-              defaultPageSize: 20,
+              defaultPageSize: 10,
               showSizeChanger: true,
               showQuickJumper: true,
-              pageSizeOptions: ['20', '50', '100'],
+              pageSizeOptions: ['10', '20', '30', '50', '100'],
               showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
             }}
             rowSelection={{
@@ -508,38 +508,38 @@ const ImageManager = () => {
             }}
             tableAlertRender={({ selectedRowKeys, onCleanSelected }) => (
               <Space size={24}>
-              <span>
-                已选择 <strong>{selectedRowKeys.length}</strong> 项
-              </span>
-              <Button
-                type="link"
-                size="small"
-                onClick={onCleanSelected}
-              >
-                取消选择
-              </Button>
-            </Space>
-          )}
-          tableAlertOptionRender={({ selectedRowKeys }) => (
-            <Space size={16}>
-              <Button
-                type="primary"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                onClick={handleBatchDelete}
-                disabled={selectedRowKeys.length === 0}
-              >
-                批量删除
-              </Button>
-            </Space>
-          )}
-          search={{
-            labelWidth: 'auto',
-            resetText: '重置',
-            searchText: '查询',
-          }}
-        />
+                <span>
+                  已选择 <strong>{selectedRowKeys.length}</strong> 项
+                </span>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={onCleanSelected}
+                >
+                  取消选择
+                </Button>
+              </Space>
+            )}
+            tableAlertOptionRender={({ selectedRowKeys }) => (
+              <Space size={16}>
+                <Button
+                  type="primary"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  onClick={handleBatchDelete}
+                  disabled={selectedRowKeys.length === 0}
+                >
+                  批量删除
+                </Button>
+              </Space>
+            )}
+            search={{
+              labelWidth: 'auto',
+              resetText: '重置',
+              searchText: '查询',
+            }}
+          />
         </Image.PreviewGroup>
       </ProCard>
 
@@ -569,7 +569,7 @@ const ImageManager = () => {
                 }}
               />
             </div>
-            
+
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', marginBottom: '4px' }}>图片名称:</label>
               <Input
@@ -600,7 +600,7 @@ const ImageManager = () => {
 
             <div style={{ fontSize: '12px', color: '#666' }}>
               <div>文件大小: {formatFileSize(editingImage.file_size)}</div>
-              <div>上传时间: {formatDate(editingImage.create_time*1000)}</div>
+              <div>上传时间: {formatDate(editingImage.create_time * 1000)}</div>
               <div>文件类型: {editingImage.content_type}</div>
             </div>
           </div>
