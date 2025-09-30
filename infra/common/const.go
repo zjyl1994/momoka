@@ -24,11 +24,12 @@ const (
 
 const (
 	DEFAULT_ADMIN_USER = "admin"
-)
 
-const (
 	MAX_IMAGE_SIZE = 50 * 1024 * 1024
 
 	AUTO_BACKUP_PREFIX  = "auto-"
 	BACKUP_FILE_VERSION = 1
+
+	IMAGE_TYPE_WEBP = "image/webp"
+	IMAGE_TYPE_AVIF = "image/avif"
 )

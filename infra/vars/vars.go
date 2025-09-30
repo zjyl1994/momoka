@@ -27,6 +27,7 @@ var (
 	CapInstance    cap.ICap
 	SkipAuth       bool
 	ImageConverter ImageConverterIFace
+	AutoConvFormat []string
 )
 
 type S3Conf struct {

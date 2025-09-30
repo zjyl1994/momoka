@@ -48,6 +48,15 @@ func Startup() (err error) {
 	}
 	vars.S3Debug, _ = strconv.ParseBool(os.Getenv("MOMOKA_S3_DEBUG"))
 
+	if val, _ := strconv.ParseBool(os.Getenv("MOMOKA_DISABLE_AUTO_AVIF")); !val {
+		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF)
+		logrus.Infoln("Enable auto convert avif")
+	}
+	if val, _ := strconv.ParseBool(os.Getenv("MOMOKA_DISABLE_AUTO_WEBP")); !val {
+		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_WEBP)
+		logrus.Infoln("Enable auto convert webp")
+	}
+
 	vars.ListenAddr = utils.COALESCE(os.Getenv("MOMOKA_LISTEN_ADDR"), ":8080")
 
 	vars.AutoCleanDays, err = strconv.Atoi(utils.COALESCE(os.Getenv("MOMOKA_AUTO_CLEAN_DAYS"), "7"))

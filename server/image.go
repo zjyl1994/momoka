@@ -47,7 +47,7 @@ func GetImageHandler(c *fiber.Ctx) error {
 			}
 		}
 		// 检查是否支持 webp 和 avif，统一处理
-		if accept := c.Accepts("image/webp", "image/avif"); accept != "" && imgObj.ContentType != accept {
+		if accept := c.Accepts(vars.AutoConvFormat...); accept != "" && imgObj.ContentType != accept {
 			targetPath := utils.ChangeExtName(imgObj.LocalPath, strings.TrimPrefix(accept, "image/"))
 
 			if utils.FileExists(targetPath) {

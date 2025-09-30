@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/momoka/infra/common"
 	"github.com/zjyl1994/momoka/infra/utils"
@@ -136,8 +137,12 @@ func ImageUploadHandler(c *fiber.Ctx) error {
 		image.URL = baseUrl + image.URL
 	}
 	// Async convert to avif/webp
-	vars.ImageConverter.Convert(image.LocalPath, utils.ChangeExtName(image.LocalPath, "avif"))
-	vars.ImageConverter.Convert(image.LocalPath, utils.ChangeExtName(image.LocalPath, "webp"))
+	if lo.Contains(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF) {
+		vars.ImageConverter.Convert(image.LocalPath, utils.ChangeExtName(image.LocalPath, "avif"))
+	}
+	if lo.Contains(vars.AutoConvFormat, common.IMAGE_TYPE_WEBP) {
+		vars.ImageConverter.Convert(image.LocalPath, utils.ChangeExtName(image.LocalPath, "webp"))
+	}
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"image": image,
 	})
