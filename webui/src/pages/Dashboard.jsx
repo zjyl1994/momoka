@@ -2,11 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { Row, Col, Statistic, Progress, App } from 'antd';
 import { ProCard } from '@ant-design/pro-card';
 import {
-  FileImageOutlined,
-  CloudUploadOutlined,
   DatabaseOutlined,
-  EyeOutlined,
-  GlobalOutlined,
 } from '@ant-design/icons';
 import { authFetch } from '../utils/api';
 import { useAuthStore } from '../stores/authStore.jsx';
@@ -74,55 +70,57 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [message]);
 
-  // 统计卡片数据 - 使用useMemo优化性能
-  const stats = useMemo(() => [
+  // 数字类型统计卡片数据 - 使用useMemo优化性能
+  const numberStats = useMemo(() => [
     {
       title: '图片总数',
       value: dashboardData.image_count,
-      icon: <FileImageOutlined style={{ color: '#1890ff' }} />,
-      color: '#1890ff'
-    },
-    {
-      title: '图片总容量',
-      value: formatBytes(dashboardData.image_size),
-      icon: <CloudUploadOutlined style={{ color: '#52c41a' }} />,
-      color: '#52c41a'
     },
     {
       title: '缓存文件数',
       value: dashboardData.cache_count,
-      icon: <FileImageOutlined style={{ color: '#722ed1' }} />,
-      color: '#722ed1'
-    },
-    {
-      title: '缓存占用空间',
-      value: formatBytes(dashboardData.cache_size),
-      icon: <CloudUploadOutlined style={{ color: '#eb2f96' }} />,
-      color: '#eb2f96'
     },
     {
       title: '总点击数',
       value: dashboardData.click.toLocaleString(),
-      icon: <EyeOutlined style={{ color: '#fa8c16' }} />,
-      color: '#fa8c16'
+    }
+  ], [dashboardData]);
+
+  // 尺寸类型统计卡片数据 - 使用useMemo优化性能
+  const sizeStats = useMemo(() => [
+    {
+      title: '图片总容量',
+      value: formatBytes(dashboardData.image_size),
+    },
+    {
+      title: '缓存占用空间',
+      value: formatBytes(dashboardData.cache_size),
     },
     {
       title: '总流量',
       value: formatBytes(dashboardData.bandwidth),
-      icon: <GlobalOutlined style={{ color: '#13c2c2' }} />,
-      color: '#13c2c2'
     }
   ], [dashboardData, formatBytes]);
 
-  // 负载进度条颜色计算 - 使用useCallback优化性能
-  const getLoadColor = useCallback((load) => {
-    return load > 2 ? '#ff4d4f' : load > 1 ? '#faad14' : '#52c41a';
-  }, []);
+
 
   // 内存使用百分比 - 使用useMemo优化性能
   const memoryPercent = useMemo(() => {
     return Math.round((statData.mem.used / statData.mem.total) * 100);
   }, [statData.mem.used, statData.mem.total]);
+
+  // 进度条颜色 - 根据使用率动态调整（内存和磁盘通用）
+  const getProgressColor = useCallback((percent) => {
+    if (percent < 50) {
+      return '#52c41a'; // 绿色 - 低使用率
+    } else if (percent < 80) {
+      return '#faad14'; // 黄色 - 中等使用率
+    } else {
+      return '#ff4d4f'; // 红色 - 高使用率
+    }
+  }, []);
+
+  const calcLoadPercent = load => Math.min(load * 25, 100);
 
   return (
     <ProCard
@@ -131,9 +129,24 @@ const Dashboard = () => {
       style={{ marginBottom: '24px' }}
     >
       {/* 统计卡片 */}
+      {/* 第一行：数字类型统计 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+        {numberStats.map((stat, index) => (
+          <Col xs={24} sm={12} md={8} lg={8} xl={8} key={index}>
+            <ProCard loading={loading} hoverable>
+              <Statistic
+                title={stat.title}
+                value={stat.value}
+              />
+            </ProCard>
+          </Col>
+        ))}
+      </Row>
+
+      {/* 第二行：尺寸类型统计 */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        {stats.map((stat, index) => (
-          <Col xs={24} sm={12} md={8} lg={6} xl={4} key={index}>
+        {sizeStats.map((stat, index) => (
+          <Col xs={24} sm={12} md={8} lg={8} xl={8} key={index}>
             <ProCard loading={loading} hoverable>
               <Statistic
                 title={stat.title}
@@ -145,7 +158,7 @@ const Dashboard = () => {
           </Col>
         ))}
       </Row>
-      
+
       {/* 系统状态 */}
       <Row gutter={[16, 16]}>
         {/* 系统负载 */}
@@ -155,12 +168,12 @@ const Dashboard = () => {
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '13px', color: '#666' }}>1分钟负载</span>
-                  <span style={{ fontSize: '15px', fontWeight: '600', color: '#1890ff' }}>{statData.load.load1.toFixed(2)}</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600' }}>{statData.load.load1.toFixed(2)}</span>
                 </div>
                 <Progress
-                  percent={Math.min(statData.load.load1 * 25, 100)}
+                  percent={calcLoadPercent(statData.load.load1)}
                   size="small"
-                  strokeColor={getLoadColor(statData.load.load1)}
+                  strokeColor={getProgressColor(calcLoadPercent(statData.load.load1))}
                   showInfo={false}
                 />
               </div>
@@ -168,12 +181,12 @@ const Dashboard = () => {
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '13px', color: '#666' }}>5分钟负载</span>
-                  <span style={{ fontSize: '15px', fontWeight: '600', color: '#52c41a' }}>{statData.load.load5.toFixed(2)}</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600' }}>{statData.load.load5.toFixed(2)}</span>
                 </div>
                 <Progress
-                  percent={Math.min(statData.load.load5 * 25, 100)}
+                  percent={calcLoadPercent(statData.load.load5)}
                   size="small"
-                  strokeColor={getLoadColor(statData.load.load5)}
+                  strokeColor={getProgressColor(calcLoadPercent(statData.load.load5))}
                   showInfo={false}
                 />
               </div>
@@ -181,19 +194,19 @@ const Dashboard = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '13px', color: '#666' }}>15分钟负载</span>
-                  <span style={{ fontSize: '15px', fontWeight: '600', color: '#faad14' }}>{statData.load.load15.toFixed(2)}</span>
+                  <span style={{ fontSize: '15px', fontWeight: '600' }}>{statData.load.load15.toFixed(2)}</span>
                 </div>
                 <Progress
-                  percent={Math.min(statData.load.load15 * 25, 100)}
+                  percent={calcLoadPercent(statData.load.load15)}
                   size="small"
-                  strokeColor={getLoadColor(statData.load.load15)}
+                  strokeColor={getProgressColor(calcLoadPercent(statData.load.load15))}
                   showInfo={false}
                 />
               </div>
             </div>
           </ProCard>
         </Col>
-        
+
         {/* 磁盘使用情况 */}
         <Col xs={24} lg={8}>
           <ProCard title="磁盘使用情况" loading={loading} style={{ height: '300px' }} headerBordered>
@@ -202,27 +215,27 @@ const Dashboard = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span>磁盘使用率</span>
                 </div>
-                <Progress percent={statData.disk.percent.toFixed(2)} strokeColor="#faad14" />
+                <Progress percent={statData.disk.percent.toFixed(2)} strokeColor={getProgressColor(statData.disk.percent)} />
               </div>
 
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span><DatabaseOutlined /> 总容量</span>
-                  <span style={{ fontWeight: 600, color: '#1890ff' }}>{formatBytes(statData.disk.total)}</span>
+                  <span style={{ fontWeight: 600 }}>{formatBytes(statData.disk.total)}</span>
                 </div>
               </div>
 
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span><DatabaseOutlined /> 已使用</span>
-                  <span style={{ fontWeight: 600, color: '#f5222d' }}>{formatBytes(statData.disk.used)}</span>
+                  <span style={{ fontWeight: 600 }}>{formatBytes(statData.disk.used)}</span>
                 </div>
               </div>
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span><DatabaseOutlined /> 可用空间</span>
-                  <span style={{ fontWeight: 600, color: '#52c41a' }}>{formatBytes(statData.disk.free)}</span>
+                  <span style={{ fontWeight: 600 }}>{formatBytes(statData.disk.free)}</span>
                 </div>
               </div>
             </div>
@@ -237,10 +250,7 @@ const Dashboard = () => {
                 type="circle"
                 percent={memoryPercent}
                 format={(percent) => `${percent}%`}
-                strokeColor={{
-                  '0%': '#108ee9',
-                  '100%': '#87d068',
-                }}
+                strokeColor={getProgressColor(memoryPercent)}
                 size={120}
               />
               <div style={{ marginTop: '16px' }}>
