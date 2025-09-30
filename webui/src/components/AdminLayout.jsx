@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { ProLayout } from '@ant-design/pro-layout';
 import { Dropdown, Space, Tag } from 'antd';
 import {
@@ -15,13 +15,11 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore.jsx';
-import { getAuthConfig } from '../utils/api';
 
 const AdminLayout = () => {
   const { user, logout, siteName, isDevMode, initialized } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [openKeys, setOpenKeys] = useState(['/admin/settings']);
 
   // 设置页面标题
   useEffect(() => {
@@ -29,12 +27,12 @@ const AdminLayout = () => {
     if (!initialized) {
       return;
     }
-    
+
     // 根据当前路由设置不同的页面标题
     const getPageTitle = () => {
       const path = location.pathname;
       let pageTitle = '管理后台';
-      
+
       if (path === '/admin') {
         pageTitle = '仪表板';
       } else if (path === '/admin/images-upload') {
@@ -44,7 +42,7 @@ const AdminLayout = () => {
       } else if (path === '/admin/settings') {
         pageTitle = '系统设置';
       }
-      
+
       return `${pageTitle} - ${siteName}`;
     };
 
@@ -150,9 +148,8 @@ const AdminLayout = () => {
       route={{
         routes: menuData
       }}
-      location={{
-        pathname: location.pathname
-      }}
+      location={location}
+      selectedKeys={[location.pathname]}
       menuItemRender={(item, dom) => (
         <div
           onClick={() => {
@@ -179,11 +176,6 @@ const AdminLayout = () => {
             </Dropdown>
           );
         }
-      }}
-      menuProps={{
-        selectedKeys: [location.pathname],
-        openKeys: openKeys,
-        onOpenChange: setOpenKeys
       }}
     >
       <Outlet />
