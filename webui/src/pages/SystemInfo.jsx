@@ -49,9 +49,6 @@ const SystemInfo = () => {
             color: 'rgba(0, 0, 0, 0.65)'
           }
         }}
-        style={{
-          borderBottom: '1px solid #f0f0f0'
-        }}
       >
         <Descriptions.Item label="S3 端点">{readonlyInfo.s3_endpoint || '-'}</Descriptions.Item>
         <Descriptions.Item label="S3 存储桶">{readonlyInfo.s3_bucket || '-'}</Descriptions.Item>

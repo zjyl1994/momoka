@@ -251,12 +251,7 @@ const BackupManagement = () => {
         dataSource={backups}
         loading={loading || creating || restoringBackup !== null || deletingBackup !== null}
         rowKey="name"
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 个备份`,
-        }}
+        pagination={false}
         locale={{
           emptyText: '暂无备份数据',
         }}
