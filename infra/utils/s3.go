@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -15,11 +17,16 @@ import (
 type s3Logger struct{}
 
 func (s3Logger) Logf(classification logging.Classification, format string, v ...interface{}) {
+	logText := fmt.Sprintf(strings.TrimSpace(format), v...)
+	// disable checksum warning
+	if strings.Contains(logText, "Response has no supported checksum") {
+		return
+	}
 	switch classification {
 	case logging.Warn:
-		logrus.Warnf(format, v...)
+		logrus.Warnln("[S3]", logText)
 	case logging.Debug:
-		logrus.Debugf(format, v...)
+		logrus.Debugln("[S3]", logText)
 	}
 }
 

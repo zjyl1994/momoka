@@ -151,8 +151,8 @@ func BackgroundBackupTask(ctx context.Context) {
 	autoBackups := lo.Filter(backups, func(item common.FileInfo, index int) bool {
 		return strings.HasSuffix(item.Name, ".auto")
 	})
-	logrus.Debugln("Auto backups", lo.Map(autoBackups, func(item common.FileInfo, index int) string {
-		return item.Name
+	logrus.Debugln("Existing backups", lo.Map(autoBackups, func(item common.FileInfo, index int) string {
+		return strings.TrimSuffix(item.Name, ".auto")
 	}))
 	if len(autoBackups) > 5 {
 		// 排序，保留最新的5个
