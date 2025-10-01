@@ -202,7 +202,7 @@ func Startup() (err error) {
 	// 启动后台自动备份服务
 	go utils.RunTickerTask(context.Background(), time.Hour, initialized, service.BackgroundBackupTask)
 	// 启动后台自动保存点击数据服务
-	go utils.RunTickerTask(context.Background(), 5*time.Minute, initialized, service.ImageCounterService.BackgroundSave)
+	go utils.RunTickerTask(context.Background(), 5*time.Minute, initialized, service.ImageCounterService.Save)
 
 	return server.Run(vars.ListenAddr)
 }

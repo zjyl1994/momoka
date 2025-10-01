@@ -23,6 +23,7 @@ type imageCounterService struct {
 var ImageCounterService = &imageCounterService{}
 
 func (s *imageCounterService) GetData() common.ClickCtrData {
+	s.checkMonth()
 	return common.ClickCtrData{
 		YearMonth:        s.globalYearMonth.Load(),
 		TotalClick:       s.totalClick.Load(),
@@ -40,6 +41,17 @@ func (s *imageCounterService) SetData(data common.ClickCtrData) {
 	s.monthlyBandwidth.Store(data.MonthlyBandwidth)
 }
 
+func (s *imageCounterService) checkMonth() {
+	// monthly
+	currentYM := utils.GetYearMonth(time.Now())
+	if loadedYM := s.globalYearMonth.Load(); loadedYM != currentYM {
+		if s.globalYearMonth.CompareAndSwap(loadedYM, currentYM) { // reset monthly counter
+			s.monthlyClick.Store(0)
+			s.monthlyBandwidth.Store(0)
+			go s.Save(context.Background())
+		}
+	}
+}
 func (s *imageCounterService) Incr(path string) {
 	size, err := s.fileSizeSf.Do(path, func() (int64, error) {
 		return utils.GetFileSize(path)
@@ -47,21 +59,14 @@ func (s *imageCounterService) Incr(path string) {
 	if err != nil {
 		return
 	}
-	s.totalClick.Add(1)
-	s.totalBandwidth.Add(size)
-	// monthly
-	currentYM := utils.GetYearMonth(time.Now())
-	if loadedYM := s.globalYearMonth.Load(); loadedYM != currentYM {
-		if s.globalYearMonth.CompareAndSwap(loadedYM, currentYM) { // reset monthly counter
-			s.monthlyClick.Store(0)
-			s.monthlyBandwidth.Store(0)
-		}
-	}
+	s.checkMonth()
 	s.monthlyClick.Add(1)
 	s.monthlyBandwidth.Add(size)
+	s.totalClick.Add(1)
+	s.totalBandwidth.Add(size)
 }
 
-func (s *imageCounterService) BackgroundSave(ctx context.Context) {
+func (s *imageCounterService) Save(ctx context.Context) {
 	data := s.GetData()
 	clickCtrJson, err := json.Marshal(data)
 	if err != nil {
