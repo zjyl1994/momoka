@@ -37,12 +37,14 @@ func DashboardDataHandler(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"count": fiber.Map{
-			"image_count": imageCount,
-			"image_size":  imageSize,
-			"cache_count": fileCount,
-			"cache_size":  totalSize,
-			"click":       vars.TotalImageClick.Load(),
-			"bandwidth":   vars.TotalImageBandwidth.Load(),
+			"image_count":       imageCount,
+			"image_size":        imageSize,
+			"cache_count":       fileCount,
+			"cache_size":        totalSize,
+			"click":             vars.TotalImageClick.Load(),
+			"bandwidth":         vars.TotalImageBandwidth.Load(),
+			"monthly_click":     vars.MonthlyImageClick.Load(),
+			"monthly_bandwidth": vars.MonthlyImageBandwidth.Load(),
 		},
 		"stat": fiber.Map{
 			"load": fiber.Map{

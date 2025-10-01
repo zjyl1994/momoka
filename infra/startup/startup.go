@@ -25,7 +25,9 @@ import (
 func Startup() (err error) {
 	var initialized bool
 
-	vars.BootTime = time.Now()
+	now := time.Now()
+	vars.BootTime = now
+	vars.GlobalYearMonth.Store(utils.GetYearMonth(now))
 	vars.DebugMode, _ = strconv.ParseBool(os.Getenv("MOMOKA_DEBUG"))
 	if vars.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)

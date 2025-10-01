@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/zjyl1994/momoka/infra/common"
@@ -71,14 +72,33 @@ func GetImageHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	// 记录点击次数和带宽
-	fileSize, err := utils.GetFileSize(localPath)
+	// 记录点击次数和带宽消耗
+	err = updateImageCounter(localPath)
 	if err != nil {
 		return err
 	}
-	vars.TotalImageClick.Add(1)
-	vars.TotalImageBandwidth.Add(fileSize)
 	// 设置客户端缓存控制
 	c.Set("Cache-Control", "public, max-age=2592000") // 公开缓存30天
 	return c.SendFile(localPath)
+}
+
+func updateImageCounter(path string) error {
+	fileSize, err := utils.GetFileSize(path)
+	if err != nil {
+		return err
+	}
+	// monthly
+	currentYM := utils.GetYearMonth(time.Now())
+	if loadedYM := vars.GlobalYearMonth.Load(); loadedYM != currentYM {
+		if vars.GlobalYearMonth.CompareAndSwap(loadedYM, currentYM) {
+			vars.MonthlyImageClick.Store(0)
+			vars.MonthlyImageBandwidth.Store(0)
+		}
+	}
+	vars.MonthlyImageClick.Add(1)
+	vars.MonthlyImageBandwidth.Add(fileSize)
+	// total
+	vars.TotalImageClick.Add(1)
+	vars.TotalImageBandwidth.Add(fileSize)
+	return nil
 }

@@ -131,3 +131,7 @@ func RandStr(length int) string {
 	}
 	return sb.String()
 }
+
+func GetYearMonth(t time.Time) int64 {
+	return int64(t.Year()*100 + int(t.Month()))
+}

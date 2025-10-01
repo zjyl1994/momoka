@@ -15,7 +15,9 @@ const Dashboard = () => {
     cache_count: 0,
     cache_size: 0,
     click: 0,
-    bandwidth: 0
+    bandwidth: 0,
+    monthly_click: 0,
+    monthly_bandwidth: 0
   });
   const [statData, setStatData] = useState({
     load: { load1: 0, load5: 0, load15: 0 },
@@ -83,6 +85,10 @@ const Dashboard = () => {
     {
       title: '总点击数',
       value: dashboardData.click.toLocaleString(),
+    },
+    {
+      title: '本月点击数',
+      value: dashboardData.monthly_click.toLocaleString(),
     }
   ], [dashboardData]);
 
@@ -99,6 +105,10 @@ const Dashboard = () => {
     {
       title: '总流量',
       value: formatBytes(dashboardData.bandwidth),
+    },
+    {
+      title: '本月流量',
+      value: formatBytes(dashboardData.monthly_bandwidth),
     }
   ], [dashboardData, formatBytes]);
 
@@ -132,7 +142,7 @@ const Dashboard = () => {
       {/* 第一行：数字类型统计 */}
       <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
         {numberStats.map((stat, index) => (
-          <Col xs={24} sm={12} md={8} lg={8} xl={8} key={index}>
+          <Col xs={24} sm={12} md={12} lg={6} xl={6} key={index}>
             <ProCard loading={loading} hoverable>
               <Statistic
                 title={stat.title}
@@ -146,7 +156,7 @@ const Dashboard = () => {
       {/* 第二行：尺寸类型统计 */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         {sizeStats.map((stat, index) => (
-          <Col xs={24} sm={12} md={8} lg={8} xl={8} key={index}>
+          <Col xs={24} sm={12} md={12} lg={6} xl={6} key={index}>
             <ProCard loading={loading} hoverable>
               <Statistic
                 title={stat.title}
