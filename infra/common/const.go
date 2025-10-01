@@ -22,6 +22,7 @@ const (
 	SETTING_KEY_SITE_NAME          = "site_name"
 	SETTING_KEY_AUTO_CONV_WEBP     = "auto_conv_webp"
 	SETTING_KEY_AUTO_CONV_AVIF     = "auto_conv_avif"
+	SETTING_KEY_CLICK_CTR_DATA     = "click_ctr_data"
 )
 
 const (

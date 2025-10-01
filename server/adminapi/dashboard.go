@@ -34,6 +34,7 @@ func DashboardDataHandler(c *fiber.Ctx) error {
 		return err
 	}
 	uptime := time.Since(vars.BootTime).Seconds()
+	imgCtr := service.ImageCounterService.GetData()
 
 	return c.JSON(fiber.Map{
 		"count": fiber.Map{
@@ -41,10 +42,10 @@ func DashboardDataHandler(c *fiber.Ctx) error {
 			"image_size":        imageSize,
 			"cache_count":       fileCount,
 			"cache_size":        totalSize,
-			"click":             vars.TotalImageClick.Load(),
-			"bandwidth":         vars.TotalImageBandwidth.Load(),
-			"monthly_click":     vars.MonthlyImageClick.Load(),
-			"monthly_bandwidth": vars.MonthlyImageBandwidth.Load(),
+			"click":             imgCtr.TotalClick,
+			"bandwidth":         imgCtr.TotalBandwidth,
+			"monthly_click":     imgCtr.MonthlyClick,
+			"monthly_bandwidth": imgCtr.MonthlyBandwidth,
 		},
 		"stat": fiber.Map{
 			"load": fiber.Map{

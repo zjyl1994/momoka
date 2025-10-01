@@ -2,6 +2,7 @@ package startup
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strconv"
 	"strings"
@@ -27,7 +28,7 @@ func Startup() (err error) {
 
 	now := time.Now()
 	vars.BootTime = now
-	vars.GlobalYearMonth.Store(utils.GetYearMonth(now))
+
 	vars.DebugMode, _ = strconv.ParseBool(os.Getenv("MOMOKA_DEBUG"))
 	if vars.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -169,7 +170,23 @@ func Startup() (err error) {
 		vars.AutoConvFormat = append(vars.AutoConvFormat, common.IMAGE_TYPE_AVIF)
 	}
 	logrus.Debugln("Auto convert format: ", vars.AutoConvFormat)
-
+	// load click counter data
+	clickCtrJson, err := service.SettingService.Get(common.SETTING_KEY_CLICK_CTR_DATA)
+	if err != nil {
+		return err
+	}
+	var clickCtrData common.ClickCtrData
+	if clickCtrJson != "" {
+		err = json.Unmarshal([]byte(clickCtrJson), &clickCtrData)
+		if err != nil {
+			return err
+		}
+	}
+	if clickCtrData.YearMonth == 0 {
+		clickCtrData.YearMonth = utils.GetYearMonth(time.Now())
+	}
+	service.ImageCounterService.SetData(clickCtrData)
+	// auto clean
 	if vars.AutoCleanDays > 0 || vars.AutoCleanItems > 0 {
 		// 后台线程自动清理本地缓存
 		go utils.RunTickerTask(context.Background(), time.Hour, true, func(context.Context) {
@@ -184,6 +201,8 @@ func Startup() (err error) {
 	}
 	// 启动后台自动备份服务
 	go utils.RunTickerTask(context.Background(), time.Hour, initialized, service.BackgroundBackupTask)
+	// 启动后台自动保存点击数据服务
+	go utils.RunTickerTask(context.Background(), 5*time.Minute, initialized, service.ImageCounterService.BackgroundSave)
 
 	return server.Run(vars.ListenAddr)
 }
