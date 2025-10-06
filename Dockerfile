@@ -2,18 +2,18 @@
 FROM node:24-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache \
+RUN --mount=type=cache,target=/var/cache/apk apk add --no-cache \
     go \
     make \
     upx \
-    git
+    git \
+    pkgconfig \
+    pnpm \
+    vips-dev
 
 # Set Go environment
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
-
-# Install pnpm
-RUN npm install -g pnpm
 
 WORKDIR /app
 
@@ -21,12 +21,12 @@ WORKDIR /app
 COPY . .
 
 # Build using Makefile
-RUN make all
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/pnpm_cache make all
 
 # Runtime stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates tzdata wget
+RUN --mount=type=cache,target=/var/cache/apk apk add ca-certificates tzdata wget
 
 # Create app user and data directory
 RUN addgroup -g 1000 momoka && \
