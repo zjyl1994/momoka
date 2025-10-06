@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -43,11 +43,6 @@ RUN chown momoka:momoka momoka
 # Set environment variables with defaults
 ENV MOMOKA_DATA_PATH=/data
 ENV MOMOKA_LISTEN=:8080
-ENV MOMOKA_DEBUG=false
-ENV MOMOKA_SKIP_AUTH=false
-ENV MOMOKA_S3_PREFIX=momoka
-ENV MOMOKA_AUTO_CLEAN_DAYS=7
-ENV MOMOKA_AUTO_CLEAN_ITEMS=300
 
 # Data volume and port
 VOLUME [ "/data" ]

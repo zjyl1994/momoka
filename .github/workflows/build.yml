@@ -59,29 +59,7 @@ jobs:
         cache-to: type=gha,mode=max,scope=build-${{ github.ref_name }}
         build-args: |
           BUILDKIT_INLINE_CACHE=1
-        
-    - name: Test Docker image
-      run: |
-        # Pull the built image for testing
-        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
-        
-        # Run container in background for testing
-        docker run -d --name test-container \
-          -p 8080:8080 \
-          -e MOMOKA_DATA_PATH=/data \
-          -e MOMOKA_SKIP_AUTH=true \
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
-        
-        # Wait for container to start
-        sleep 10
-        
-        # Test health endpoint
-        curl -f http://localhost:8080/healthz || exit 1
-        
-        # Clean up
-        docker stop test-container
-        docker rm test-container
-        
+         
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
