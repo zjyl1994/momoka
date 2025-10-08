@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/pnpm_cache 
 # Runtime stage
 FROM alpine:latest
 
-RUN --mount=type=cache,target=/var/cache/apk apk add ca-certificates tzdata wget
+RUN --mount=type=cache,target=/var/cache/apk apk add ca-certificates tzdata wget vips
 
 # Create app user and data directory
 RUN addgroup -g 1000 momoka && \

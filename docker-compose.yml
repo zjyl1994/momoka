@@ -1,0 +1,11 @@
+services:
+  momoka:
+    image: ghcr.io/zjyl1994/momoka:latest
+    container_name: momoka
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "12345:8080"
+    volumes:
+      - ./momoka_data:/data
