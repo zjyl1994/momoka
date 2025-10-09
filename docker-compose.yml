@@ -4,7 +4,7 @@ services:
     container_name: momoka
     restart: unless-stopped
     env_file:
-      - .env
+      - momoka.env
     ports:
       - "12345:8080"
     volumes:
